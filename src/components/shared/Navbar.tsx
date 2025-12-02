@@ -2,10 +2,8 @@
 import React, { useState } from "react";
 import { MapPin, Menu, X } from "lucide-react";
 import { Button } from "../ui/button";
-
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,7 +34,7 @@ export function Navbar() {
             >
               Login
             </a>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button variant="primary" size="sm">
               Sign Up
             </Button>
           </div>
@@ -76,7 +74,7 @@ export function Navbar() {
             >
               Login
             </a>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+            <Button variant="primary" size="sm" className="w-full">
               Sign Up
             </Button>
           </div>

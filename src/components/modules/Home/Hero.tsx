@@ -1,8 +1,7 @@
 import React from "react";
 import { Search, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Button } from "@/components/ui/button";
 export function Hero() {
   return (
     <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white">
@@ -29,10 +28,7 @@ export function Hero() {
                   className="pl-12 text-gray-900"
                 />
               </div>
-              <Button
-                size="lg"
-                className="md:w-auto w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
+              <Button variant="primary" size="lg" className="md:w-auto w-full">
                 <Search className="w-5 h-5 mr-2 inline" />
                 Search Tours
               </Button>
@@ -41,16 +37,13 @@ export function Hero() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
+            <Button variant="primary" size="lg">
               Find Your Guide
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="border-2 border-white bg-transparent hover:bg-white/10 text-white hover:text-white"
+              className="bg-white hover:bg-gray-50"
             >
               Become a Guide
             </Button>
