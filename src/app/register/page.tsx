@@ -170,7 +170,7 @@ function RegisterPage() {
             } else if (role === "ADMIN" || role === "admin") {
               router.push("/dashboard/admin");
             } else {
-              router.push("/dashboard/tourist");
+              router.push("/");
             }
 
             // Force refresh

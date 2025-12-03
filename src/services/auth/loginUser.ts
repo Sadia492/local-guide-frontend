@@ -66,7 +66,7 @@ export const loginUser = async (prevState: any, formData: FormData) => {
     } else if (role === "ADMIN") {
       redirect("/dashboard/admin");
     } else {
-      redirect("/dashboard/tourist");
+      redirect("/");
     }
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) {

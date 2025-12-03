@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { MapPin, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,73 +9,108 @@ import Link from "next/link";
 
 function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const [isPending, startTransition] = useTransition();
+  const { login, user, isLoading, checkAuth } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setFormLoading(true);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
     console.log("Logging in with:", { email, password });
-    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-          credentials: "include", // ✅ needed for cookies
-        }
-      );
+      // Use the login function from useAuth
+      const loginSuccess = await login(email, password);
 
-      console.log("Response status:", res.status);
-      console.log("Response headers:", res.headers);
+      if (loginSuccess) {
+        console.log("Login successful!");
 
-      const data = await res.json();
-      console.log("Response data:", data);
+        // Re-fetch user data from backend to get updated user info
+        const updatedUser = await checkAuth();
 
-      if (!res.ok || !data.success) {
-        setError(data.message || "Invalid login credentials");
-      } else {
-        // Call the login function from useAuth to update auth state
-        const loginSuccess = await login(email, password);
+        if (updatedUser) {
+          console.log("Updated user:", updatedUser);
+          const userRole = updatedUser.role;
+          console.log("Redirecting with role:", userRole);
 
-        if (loginSuccess) {
-          console.log("Login successful, redirecting...");
+          // Use startTransition for navigation
+          startTransition(() => {
+            // Redirect based on role
+            if (userRole === "GUIDE" || userRole === "guide") {
+              router.push("/dashboard/guide");
+            } else if (userRole === "ADMIN" || userRole === "admin") {
+              router.push("/dashboard/admin");
+            } else {
+              router.push("/");
+            }
 
-          // Get user role and redirect accordingly
-          const userRole = data.user?.role || "tourist";
-
-          if (userRole === "GUIDE" || userRole === "guide") {
-            router.push("/dashboard/guide");
-          } else if (userRole === "ADMIN" || userRole === "admin") {
-            router.push("/dashboard/admin");
-          } else {
-            router.push("/dashboard/tourist");
-          }
-
-          // Force a refresh to update auth state globally
-          router.refresh();
+            // Force a refresh to update auth state globally
+            router.refresh();
+          });
         } else {
-          setError("Login failed. Please try again.");
+          setError(
+            "Login successful but couldn't fetch user data. Please refresh."
+          );
         }
+      } else {
+        setError("Invalid email or password. Please try again.");
       }
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
+
+  // Handle redirect if user is already logged in using useEffect
+  React.useEffect(() => {
+    if (user && !isLoading) {
+      console.log("User already logged in, redirecting...", user);
+      const userRole = user.role;
+
+      startTransition(() => {
+        if (userRole === "GUIDE" || userRole === "guide") {
+          router.push("/dashboard/guide");
+        } else if (userRole === "ADMIN" || userRole === "admin") {
+          router.push("/dashboard/admin");
+        } else {
+          router.push("/");
+        }
+      });
+    }
+  }, [user, isLoading, router, startTransition]);
+
+  if (isLoading || isPending) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user exists, show loading screen while redirecting
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
@@ -109,7 +144,7 @@ function LoginPage() {
               <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 mt-3" />
               <Input
                 type="email"
-                name="email" // ✅ Add name attribute for FormData
+                name="email"
                 label="Email Address"
                 placeholder="you@example.com"
                 className="pl-12"
@@ -121,7 +156,7 @@ function LoginPage() {
               <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 mt-3" />
               <Input
                 type={showPassword ? "text" : "password"}
-                name="password" // ✅ Add name attribute for FormData
+                name="password"
                 label="Password"
                 placeholder="Enter your password"
                 className="pl-12 pr-12"
@@ -162,9 +197,9 @@ function LoginPage() {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={loading}
+              disabled={formLoading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {formLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 

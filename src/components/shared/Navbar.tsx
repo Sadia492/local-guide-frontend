@@ -89,7 +89,7 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist"
+                      href="/my-bookings"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       My Bookings
@@ -214,7 +214,7 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist"
+                      href="/my-bookings"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
