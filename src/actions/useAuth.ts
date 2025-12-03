@@ -3,26 +3,36 @@
 import { useState, useEffect } from "react";
 
 interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
+  profilePicture?: string;
+  bio?: string;
+  languages?: string[];
+  expertise?: string[];
+  travelPreferences?: string[];
+  dailyRate?: number;
 }
 
 interface AuthResponse {
   success: boolean;
-  user: User;
+  statusCode: number;
+  message: string;
+  data: User; // User is directly under data
 }
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  console.log(user);
+
   // Check if user is logged in
   const checkAuth = async (): Promise<User | null> => {
     try {
       setIsLoading(true);
+      console.log("Checking auth...");
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
         {
@@ -30,20 +40,25 @@ export function useAuth() {
         }
       );
 
+      console.log("Auth check response status:", response.status);
+
       if (response.ok) {
         const data: AuthResponse = await response.json();
         console.log("Auth response data:", data); // Debug
 
-        if (data.success && data.user) {
-          setUser(data.user); // Extract the user from the response
+        if (data.success && data.data) {
+          setUser(data.data); // Access data directly (not data.user.data)
           setIsAuthenticated(true);
-          return data.user;
+          console.log("User set:", data.data);
+          return data.data;
         } else {
+          console.log("No user data in response");
           setUser(null);
           setIsAuthenticated(false);
           return null;
         }
       } else {
+        console.log("Auth check failed with status:", response.status);
         setUser(null);
         setIsAuthenticated(false);
         return null;
@@ -61,6 +76,8 @@ export function useAuth() {
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log("Logging in with:", { email });
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
         {
@@ -73,10 +90,18 @@ export function useAuth() {
         }
       );
 
+      console.log("Login response status:", response.status);
+
       if (response.ok) {
-        await checkAuth(); // Re-check auth status after login
+        const result = await response.json();
+        console.log("Login result:", result);
+
+        // Call checkAuth to update state
+        await checkAuth();
         return true;
       }
+
+      console.log("Login failed");
       return false;
     } catch (error) {
       console.error("Login error:", error);
@@ -87,6 +112,7 @@ export function useAuth() {
   // Logout function
   const logout = async (): Promise<void> => {
     try {
+      console.log("Logging out...");
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -96,12 +122,15 @@ export function useAuth() {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      console.log("User state cleared, redirecting to home");
       // force refresh client state
       window.location.href = "/";
     }
   };
 
+  // Check auth on mount
   useEffect(() => {
+    console.log("useAuth useEffect running");
     checkAuth();
   }, []);
 

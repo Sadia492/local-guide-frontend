@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/actions/useAuth";
+import Link from "next/link";
 
 function LoginPage() {
   const router = useRouter();
@@ -81,10 +82,13 @@ function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-4">
+          <Link
+            href={"/"}
+            className="flex items-center justify-center space-x-2 mb-4"
+          >
             <MapPin className="w-10 h-10 text-blue-600" />
             <span className="text-3xl font-bold text-gray-900">LocalGuide</span>
-          </div>
+          </Link>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome Back
           </h1>
