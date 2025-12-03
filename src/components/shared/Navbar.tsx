@@ -66,12 +66,12 @@ export function Navbar() {
                     >
                       Dashboard
                     </Link>
-                    <Link
+                    {/* <Link
                       href="/dashboard/guide/listings"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       My Listings
-                    </Link>
+                    </Link> */}
                   </>
                 )}
 
@@ -83,29 +83,41 @@ export function Navbar() {
                     >
                       Admin Dashboard
                     </Link>
+                    <Link
+                      href="/dashboard/admin/users"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      Manage Users
+                    </Link>
+                    <Link
+                      href="/dashboard/admin/listings"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      Manage Listings
+                    </Link>
                   </>
                 )}
 
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/my-bookings"
+                      href="/dashboard/tourist"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
-                      My Bookings
+                      Dashboard
                     </Link>
                   </>
                 )}
 
                 {/* Show Become a Guide for tourists only */}
-                {user.role === "TOURIST" && (
+                {/* {user.role === "TOURIST" && (
                   <Link
                     href="/become-a-guide"
                     className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                   >
                     Become a Guide
                   </Link>
-                )}
+                )} */}
 
                 {/* Common for all logged in users */}
                 <Link
@@ -189,13 +201,13 @@ export function Navbar() {
                     >
                       Dashboard
                     </Link>
-                    <Link
+                    {/* <Link
                       href="/dashboard/guide/listings"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       My Listings
-                    </Link>
+                    </Link> */}
                   </>
                 )}
 
@@ -208,23 +220,35 @@ export function Navbar() {
                     >
                       Admin Dashboard
                     </Link>
+                    <Link
+                      href="/dashboard/admin/users"
+                      className="block text-gray-700 hover:text-blue-600 font-medium py-2"
+                    >
+                      Manage Users
+                    </Link>
+                    <Link
+                      href="/dashboard/admin/listings"
+                      className="block text-gray-700 hover:text-blue-600 font-medium py-2"
+                    >
+                      Manage Listings
+                    </Link>
                   </>
                 )}
 
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/my-bookings"
+                      href="/dashboard/tourist"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      My Bookings
+                      Dashboard
                     </Link>
                   </>
                 )}
 
                 {/* Show Become a Guide for tourists only */}
-                {user.role === "TOURIST" && (
+                {/* {user.role === "TOURIST" && (
                   <Link
                     href="/become-a-guide"
                     className="block text-gray-700 hover:text-blue-600 font-medium py-2"
@@ -232,7 +256,7 @@ export function Navbar() {
                   >
                     Become a Guide
                   </Link>
-                )}
+                )} */}
 
                 {/* Common for all logged in users */}
                 <Link

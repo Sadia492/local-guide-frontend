@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   MapPin,
   Mail,
@@ -9,6 +9,8 @@ import {
   EyeOff,
   Globe,
   Map,
+  Camera,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,10 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [cityError, setCityError] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string>("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -34,7 +40,7 @@ function RegisterPage() {
     languages: [] as string[],
     expertise: [] as string[], // For guides
     dailyRate: "", // For guides
-    city: "", // For guides - IMPORTANT
+    city: "", // For guides
     travelPreferences: [] as string[], // For tourists
   });
 
@@ -72,6 +78,42 @@ function RegisterPage() {
     "Nature",
   ];
 
+  // Handle profile photo upload
+  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Profile photo must be less than 5MB");
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload an image file");
+        return;
+      }
+
+      setProfilePhoto(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove profile photo
+  const removeProfilePhoto = () => {
+    setProfilePhoto(null);
+    setProfilePhotoPreview("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -98,40 +140,44 @@ function RegisterPage() {
       return;
     }
 
-    // Prepare data based on role
-    const userData: any = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role.toUpperCase(), // Convert to uppercase (TOURIST/GUIDE)
-    };
+    // Create FormData object
+    const formDataObj = new FormData();
 
-    // Add optional fields if provided
-    if (formData.bio) userData.bio = formData.bio;
-    if (formData.languages.length > 0) userData.languages = formData.languages;
+    // Add text fields
+    formDataObj.append(
+      "data",
+      JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role.toUpperCase(), // Convert to uppercase (TOURIST/GUIDE)
+        bio: formData.bio,
+        languages: formData.languages,
+        expertise: formData.role === "guide" ? formData.expertise : [],
+        dailyRate:
+          formData.role === "guide" && formData.dailyRate
+            ? Number(formData.dailyRate)
+            : undefined,
+        city: formData.role === "guide" ? formData.city : undefined,
+        travelPreferences:
+          formData.role === "tourist" ? formData.travelPreferences : [],
+      })
+    );
 
-    // Add role-specific fields
-    if (formData.role === "guide") {
-      if (formData.expertise.length > 0)
-        userData.expertise = formData.expertise;
-      if (formData.dailyRate) userData.dailyRate = Number(formData.dailyRate);
-      if (formData.city) userData.city = formData.city; // REQUIRED for guides
-    } else if (formData.role === "tourist") {
-      if (formData.travelPreferences.length > 0)
-        userData.travelPreferences = formData.travelPreferences;
+    // Add profile photo if exists
+    if (profilePhoto) {
+      formDataObj.append("file", profilePhoto);
     }
 
-    console.log("Registering user:", userData);
+    console.log("Registering user with FormData...");
 
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userData),
+          // Don't set Content-Type header, browser will set it automatically for FormData
+          body: formDataObj,
           credentials: "include", // IMPORTANT: For cookies
         }
       );
@@ -146,46 +192,32 @@ function RegisterPage() {
       // Registration successful - now handle auto-login
       console.log("Registration successful!", data);
 
-      // Store tokens if provided in response body
-      if (data.data?.accessToken) {
-        // Store in localStorage (or you can set cookies)
-        localStorage.setItem("accessToken", data.data.accessToken);
-        if (data.data.refreshToken) {
-          localStorage.setItem("refreshToken", data.data.refreshToken);
-        }
+      // Try to auto-login
+      try {
+        const loginSuccess = await login(formData.email, formData.password);
 
-        // Store user info
-        if (data.data.user) {
-          localStorage.setItem("user", JSON.stringify(data.data.user));
+        if (loginSuccess) {
+          // Redirect based on role
+          const role = data.data?.user?.role || formData.role.toUpperCase();
 
-          // Update auth state by calling login
-          const loginSuccess = await login(formData.email, formData.password);
-
-          if (loginSuccess) {
-            // Redirect based on role
-            const role = data.data.user.role || formData.role;
-
-            if (role === "GUIDE" || role === "guide") {
-              router.push("/dashboard/guide");
-            } else if (role === "ADMIN" || role === "admin") {
-              router.push("/dashboard/admin");
-            } else {
-              router.push("/");
-            }
-
-            // Force refresh
-            router.refresh();
+          if (role === "GUIDE" || role === "guide") {
+            router.push("/dashboard/guide");
+          } else if (role === "ADMIN" || role === "admin") {
+            router.push("/dashboard/admin");
           } else {
-            // If auto-login fails, redirect to login page
-            router.push(
-              `/login?registered=true&email=${encodeURIComponent(
-                formData.email
-              )}`
-            );
+            router.push("/dashboard/tourist");
           }
+
+          router.refresh();
+        } else {
+          // If auto-login fails, redirect to login page
+          router.push(
+            `/login?registered=true&email=${encodeURIComponent(formData.email)}`
+          );
         }
-      } else {
-        // If no tokens in response, redirect to login
+      } catch (loginErr) {
+        console.error("Auto-login error:", loginErr);
+        // Still redirect to login page if auto-login fails
         router.push(
           `/login?registered=true&email=${encodeURIComponent(formData.email)}`
         );
@@ -249,6 +281,59 @@ function RegisterPage() {
                 {error}
               </div>
             )}
+
+            {/* Profile Photo Upload */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Profile Photo (Optional)
+              </label>
+              <div className="flex items-center space-x-6">
+                {/* Profile Photo Preview */}
+                <div className="relative">
+                  {profilePhotoPreview ? (
+                    <>
+                      <img
+                        src={profilePhotoPreview}
+                        alt="Profile preview"
+                        className="w-24 h-24 rounded-full object-cover border-2 border-blue-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeProfilePhoto}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      <Camera className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Button */}
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleProfilePhotoChange}
+                    accept="image/*"
+                    className="hidden"
+                    id="profilePhoto"
+                  />
+                  <label htmlFor="profilePhoto" className="cursor-pointer">
+                    <div className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                      <Camera className="w-4 h-4 mr-2" />
+                      {profilePhoto ? "Change Photo" : "Upload Photo"}
+                    </div>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2">
+                    JPG, PNG or GIF (Max 5MB)
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Role Selection */}
             <div className="grid grid-cols-2 gap-4 mb-6">

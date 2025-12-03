@@ -1,110 +1,162 @@
+// components/shared/Sidebar.tsx
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Home, PlusCircle, LogOut, Book, Menu, X } from "lucide-react";
 import { useAuth } from "@/actions/useAuth";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Link from "next/link";
+import {
+  Home,
+  Compass,
+  User,
+  LogOut,
+  Calendar,
+  Briefcase,
+  Shield,
+  Settings,
+} from "lucide-react";
 
 export default function Sidebar() {
-  const { logout } = useAuth();
-  const router = useRouter();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
-    router.push("/");
   };
 
-  const toggleMobile = () => {
-    setIsMobileOpen(!isMobileOpen);
+  // Tourist navigation
+  const touristNav = [
+    {
+      href: "/dashboard/tourist",
+      icon: <Calendar className="w-5 h-5" />,
+      label: "My Bookings",
+    },
+    {
+      href: "/wishlist",
+      icon: <Home className="w-5 h-5" />,
+      label: "Wishlist",
+    },
+    {
+      href: "/explore",
+      icon: <Compass className="w-5 h-5" />,
+      label: "Explore Tours",
+    },
+  ];
+
+  // Guide navigation
+  const guideNav = [
+    {
+      href: "/dashboard/guide",
+      icon: <Briefcase className="w-5 h-5" />,
+      label: "Dashboard",
+    },
+    {
+      href: "/dashboard/guide/listings",
+      icon: <Home className="w-5 h-5" />,
+      label: "My Listings",
+    },
+    {
+      href: "/dashboard/guide/bookings",
+      icon: <Calendar className="w-5 h-5" />,
+      label: "Bookings",
+    },
+    {
+      href: "/explore",
+      icon: <Compass className="w-5 h-5" />,
+      label: "Explore",
+    },
+  ];
+
+  // Admin navigation
+  const adminNav = [
+    {
+      href: "/dashboard/admin",
+      icon: <Shield className="w-5 h-5" />,
+      label: "Admin Dashboard",
+    },
+    {
+      href: "/dashboard/admin/users",
+      icon: <User className="w-5 h-5" />,
+      label: "Manage Users",
+    },
+    {
+      href: "/dashboard/admin/listings",
+      icon: <Home className="w-5 h-5" />,
+      label: "Manage Listings",
+    },
+  ];
+
+  // Common navigation
+  const commonNav = [
+    {
+      href: `/profile/${user?._id || "me"}`,
+      icon: <User className="w-5 h-5" />,
+      label: "Profile",
+    },
+    {
+      href: "/settings",
+      icon: <Settings className="w-5 h-5" />,
+      label: "Settings",
+    },
+  ];
+
+  // Get navigation based on user role
+  const getNavItems = () => {
+    if (!user) return [];
+
+    switch (user.role) {
+      case "TOURIST":
+        return [...touristNav, ...commonNav];
+      case "GUIDE":
+        return [...guideNav, ...commonNav];
+      case "ADMIN":
+        return [...adminNav, ...commonNav];
+      default:
+        return commonNav;
+    }
   };
-
-  const navigationItems = (
-    <>
-      <Link
-        href="/"
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black transition-colors"
-        onClick={() => setIsMobileOpen(false)}
-      >
-        <Home className="h-4 w-4" />
-        Home
-      </Link>
-
-      <Link
-        href="/dashboard/blogs"
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black transition-colors"
-        onClick={() => setIsMobileOpen(false)}
-      >
-        <Book className="h-4 w-4" />
-        All Blogs
-      </Link>
-
-      <Link
-        href="/dashboard/projects"
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-black transition-colors"
-        onClick={() => setIsMobileOpen(false)}
-      >
-        <PlusCircle className="h-4 w-4" />
-        All Projects
-      </Link>
-    </>
-  );
 
   return (
-    <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={toggleMobile}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-black text-white rounded-md shadow-lg hover:bg-gray-800 transition-colors"
-      >
-        {isMobileOpen ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <Menu className="h-5 w-5" />
+    <div className="h-full w-64 bg-white border-r shadow-sm">
+      <div className="p-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center space-x-2 mb-8">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <Compass className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xl font-bold text-gray-900">LocalGuide</span>
+        </Link>
+
+        {/* User info */}
+        {user && (
+          <div className="mb-6 p-3 bg-blue-50 rounded-lg">
+            <p className="font-medium text-gray-900">{user.name}</p>
+            <p className="text-sm text-gray-600 capitalize">
+              {user.role.toLowerCase()}
+            </p>
+          </div>
         )}
-      </button>
-
-      {/* Mobile Overlay */}
-      {/* Mobile Overlay - lighter */}
-      {isMobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/30 z-30"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`
-    fixed lg:static inset-y-0 left-0 z-40
-    flex w-64 flex-col border-r bg-black text-white
-    h-screen lg:h-full
-    transform transition-transform duration-300 ease-in-out
-    ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-  `}
-      >
-        {/* Logo/Brand */}
-        <div className="p-6 border-b border-gray-700">
-          <h1 className="text-xl font-bold">Dashboard</h1>
-        </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 p-4">{navigationItems}</nav>
+        <nav className="space-y-2">
+          {getNavItems().map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center space-x-3 p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-500">
-          <Button
-            variant="primary"
-            className="w-full justify-start gap-2 cursor-pointer"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </aside>
-    </>
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center space-x-3 p-3 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors mt-6"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
   );
 }

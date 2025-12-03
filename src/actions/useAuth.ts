@@ -74,6 +74,7 @@ export function useAuth() {
   };
 
   // Login function
+  // In your useAuth hook
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log("Logging in with:", { email });
@@ -96,7 +97,13 @@ export function useAuth() {
         const result = await response.json();
         console.log("Login result:", result);
 
-        // Call checkAuth to update state
+        // IMPORTANT: Update user state
+        if (result.data?.user) {
+          setUser(result.data.user);
+          setIsAuthenticated(true);
+        }
+
+        // Also call checkAuth to ensure consistency
         await checkAuth();
         return true;
       }

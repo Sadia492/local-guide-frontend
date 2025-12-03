@@ -1,19 +1,51 @@
 "use client";
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect } from "react";
 import { MapPin, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/actions/useAuth";
 import Link from "next/link";
 
 function LoginPage() {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const { login, user, isLoading, checkAuth } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, user, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+
+  // Check redirect parameter
+  const redirectTo = searchParams.get("redirect") || "/";
+
+  // Handle auto-redirect more carefully
+  useEffect(() => {
+    if (user && !isLoading && !formLoading) {
+      console.log("User is logged in, checking if we should redirect...");
+
+      // Only redirect if we're on the login page (not during form submission)
+      const timer = setTimeout(() => {
+        console.log("Auto-redirecting logged in user from login page");
+
+        // Redirect based on role or to the original redirect destination
+        if (redirectTo !== "/") {
+          router.push(redirectTo);
+        } else {
+          // Default redirect based on role
+          const userRole = user.role;
+          if (userRole === "GUIDE" || userRole === "guide") {
+            router.push("/dashboard/guide");
+          } else if (userRole === "ADMIN" || userRole === "admin") {
+            router.push("/dashboard/admin");
+          } else {
+            router.push("/dashboard/tourist");
+          }
+        }
+      }, 500); // Small delay to prevent immediate redirect during page load
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, isLoading, formLoading, router, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,33 +65,14 @@ function LoginPage() {
       if (loginSuccess) {
         console.log("Login successful!");
 
-        // Re-fetch user data from backend to get updated user info
-        const updatedUser = await checkAuth();
+        // Get the redirect destination
+        console.log("Redirecting to:", redirectTo);
 
-        if (updatedUser) {
-          console.log("Updated user:", updatedUser);
-          const userRole = updatedUser.role;
-          console.log("Redirecting with role:", userRole);
-
-          // Use startTransition for navigation
-          startTransition(() => {
-            // Redirect based on role
-            if (userRole === "GUIDE" || userRole === "guide") {
-              router.push("/dashboard/guide");
-            } else if (userRole === "ADMIN" || userRole === "admin") {
-              router.push("/dashboard/admin");
-            } else {
-              router.push("/");
-            }
-
-            // Force a refresh to update auth state globally
-            router.refresh();
-          });
-        } else {
-          setError(
-            "Login successful but couldn't fetch user data. Please refresh."
-          );
-        }
+        // Small delay to ensure state updates
+        setTimeout(() => {
+          router.push(redirectTo);
+          router.refresh();
+        }, 100);
       } else {
         setError("Invalid email or password. Please try again.");
       }
@@ -71,46 +84,20 @@ function LoginPage() {
     }
   };
 
-  // Handle redirect if user is already logged in using useEffect
-  React.useEffect(() => {
-    if (user && !isLoading) {
-      console.log("User already logged in, redirecting...", user);
-      const userRole = user.role;
-
-      startTransition(() => {
-        if (userRole === "GUIDE" || userRole === "guide") {
-          router.push("/dashboard/guide");
-        } else if (userRole === "ADMIN" || userRole === "admin") {
-          router.push("/dashboard/admin");
-        } else {
-          router.push("/");
-        }
-      });
-    }
-  }, [user, isLoading, router, startTransition]);
-
-  if (isLoading || isPending) {
+  // Show loading state only during initial auth check
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  // If user exists, show loading screen while redirecting
-  if (user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  // REMOVED the "if (user)" check here - let useEffect handle the redirect
+  // This prevents the component from rendering something different during redirect
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
@@ -140,6 +127,13 @@ function LoginPage() {
               </div>
             )}
 
+            {/* Debug info - remove in production */}
+            {user && (
+              <div className="bg-blue-50 text-blue-600 p-3 rounded-lg text-sm">
+                You are already logged in as {user.name}. Redirecting...
+              </div>
+            )}
+
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 mt-3" />
               <Input
@@ -149,6 +143,7 @@ function LoginPage() {
                 placeholder="you@example.com"
                 className="pl-12"
                 required
+                disabled={formLoading}
               />
             </div>
 
@@ -161,11 +156,13 @@ function LoginPage() {
                 placeholder="Enter your password"
                 className="pl-12 pr-12"
                 required
+                disabled={formLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 mt-3"
+                disabled={formLoading}
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -181,6 +178,7 @@ function LoginPage() {
                   type="checkbox"
                   name="remember"
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  disabled={formLoading}
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
@@ -206,12 +204,12 @@ function LoginPage() {
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{" "}
-            <a
+            <Link
               href="/register"
               className="text-blue-600 hover:text-blue-700 font-semibold"
             >
               Sign up
-            </a>
+            </Link>
           </p>
         </div>
       </div>
