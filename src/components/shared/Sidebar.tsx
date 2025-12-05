@@ -63,19 +63,19 @@ export default function Sidebar() {
       label: "Dashboard",
     },
     {
-      href: "/dashboard/guide/listings",
+      href: "/dashboard/guide/my-listings",
       icon: <Home className="w-5 h-5" />,
       label: "My Listings",
     },
     {
-      href: "/dashboard/guide/bookings",
+      href: "/dashboard/guide/upcoming-bookings",
       icon: <Calendar className="w-5 h-5" />,
-      label: "Bookings",
+      label: "Upcoming Bookings",
     },
     {
-      href: "/explore",
+      href: "/dashboard/guide/pending-requests",
       icon: <Compass className="w-5 h-5" />,
-      label: "Explore",
+      label: "Pending Requests",
     },
   ];
 
