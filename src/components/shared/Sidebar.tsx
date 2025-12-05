@@ -44,14 +44,14 @@ export default function Sidebar() {
       label: "My Bookings",
     },
     {
-      href: "/wishlist",
+      href: "/dashboard/tourist/wishlist",
       icon: <Home className="w-5 h-5" />,
       label: "Wishlist",
     },
     {
-      href: "/explore",
+      href: "/dashboard/tourist/my-trips",
       icon: <Compass className="w-5 h-5" />,
-      label: "Explore Tours",
+      label: "My Trips",
     },
   ];
 
