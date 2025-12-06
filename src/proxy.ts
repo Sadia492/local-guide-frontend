@@ -7,9 +7,15 @@ export function proxy(request: NextRequest) {
 
   console.log(`[Proxy] Checking route: ${pathname}`);
 
-  // Protect ALL dashboard routes
-  if (pathname.startsWith("/dashboard")) {
-    console.log(`[Proxy] Dashboard route detected: ${pathname}`);
+  // Protect dashboard routes AND profile routes
+  const protectedRoutes = ["/dashboard", "/profile"];
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (isProtectedRoute) {
+    console.log(`[Proxy] Protected route detected: ${pathname}`);
 
     // Get auth token from cookies
     const accessToken = request.cookies.get("accessToken")?.value;
@@ -24,12 +30,12 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    console.log(`[Proxy] Access token found, allowing dashboard access`);
+    console.log(`[Proxy] Access token found, allowing access to ${pathname}`);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/profile/:path*"],
 };
