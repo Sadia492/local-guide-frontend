@@ -1,4 +1,4 @@
-// app/dashboard/my-trips/page.tsx
+// app/dashboard/my-trips/page.tsx - Fixed version
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -13,51 +13,49 @@ import {
   AlertCircle,
   Star,
   Search,
-  Filter,
   Eye,
-  MessageSquare,
   ExternalLink,
-  ChevronRight,
   Loader2,
   RefreshCw,
-  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/actions/useAuth";
 import { toast } from "sonner";
+
+interface Guide {
+  _id: string;
+  name: string;
+  email?: string;
+  profilePicture?: string;
+}
+
+interface Listing {
+  _id: string;
+  guide: string | Guide; // Can be string (ID) or full Guide object
+  title: string;
+  city: string;
+  fee: number;
+  duration: number;
+  meetingPoint: string;
+  images: string[];
+}
 
 interface Booking {
   _id: string;
-  listing: {
-    _id: string;
-    title: string;
-    city: string;
-    fee: number;
-    duration: number;
-    meetingPoint: string;
-    images: string[];
-    guide: {
-      _id: string;
-      name: string;
-      email: string;
-      profilePicture?: string;
-    };
-  };
+  listing: Listing;
   date: string;
   groupSize: number;
   totalPrice: number;
-  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
   createdAt: string;
   updatedAt: string;
 }
 
 const MyTripsPage = () => {
-  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [guides, setGuides] = useState<Record<string, Guide>>({}); // Cache for guide info
 
   // Fetch all bookings for the tourist
   const fetchMyTrips = async () => {
@@ -75,69 +73,125 @@ const MyTripsPage = () => {
       }
 
       const data = await response.json();
-      setBookings(data.data || []);
+      console.log("Bookings data:", data); // Debug log
+
+      if (data.success && data.data) {
+        setBookings(data.data);
+
+        // Extract unique guide IDs from bookings
+        const guideIds = new Set<string>();
+        data.data.forEach((booking: Booking) => {
+          const guideId =
+            typeof booking.listing.guide === "string"
+              ? booking.listing.guide
+              : booking.listing.guide._id;
+          guideIds.add(guideId);
+        });
+
+        // Fetch guide details for each unique ID
+        await fetchGuideDetails(Array.from(guideIds));
+      } else {
+        setBookings([]);
+      }
     } catch (err) {
       console.error("Error fetching trips:", err);
       toast.error("Failed to load your trips");
+      setBookings([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (user && user.role === "TOURIST") {
-      fetchMyTrips();
+  // Fetch guide details by ID
+  const fetchGuideDetails = async (guideIds: string[]) => {
+    try {
+      const guidePromises = guideIds.map(async (guideId) => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile-details/${guideId}`,
+            {
+              credentials: "include",
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data?.user) {
+              return { id: guideId, ...data.data.user };
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching guide ${guideId}:`, error);
+        }
+        return null;
+      });
+
+      const guideResults = await Promise.all(guidePromises);
+      const guideMap: Record<string, Guide> = {};
+
+      guideResults.forEach((guide) => {
+        if (guide) {
+          guideMap[guide.id] = guide;
+        }
+      });
+
+      setGuides(guideMap);
+    } catch (error) {
+      console.error("Error fetching guide details:", error);
     }
-  }, [user]);
+  };
+
+  useEffect(() => {
+    fetchMyTrips();
+  }, []);
+
+  // Get guide name from listing (either from object or from cache)
+  const getGuideName = (listing: Listing): string => {
+    if (typeof listing.guide === "object" && listing.guide !== null) {
+      return listing.guide.name || "Local Guide";
+    } else if (typeof listing.guide === "string") {
+      // Check if we have guide info in cache
+      const guide = guides[listing.guide];
+      return guide?.name || "Local Guide";
+    }
+    return "Local Guide";
+  };
+
+  // Get guide initials for avatar
+  const getGuideInitials = (listing: Listing): string => {
+    const name = getGuideName(listing);
+    return name?.charAt(0) || "G";
+  };
 
   // Filter bookings
   const filteredBookings = bookings.filter((booking) => {
     const today = new Date();
     const bookingDate = new Date(booking.date);
     const isUpcoming = bookingDate >= today;
-    const isPast = bookingDate < today;
 
     // Status filter
     let matchesStatus = true;
     if (statusFilter === "upcoming") {
-      matchesStatus =
-        isUpcoming &&
-        booking.status !== "CANCELLED" &&
-        booking.status !== "REJECTED" &&
-        booking.status !== "COMPLETED";
+      matchesStatus = isUpcoming && booking.status !== "CANCELLED";
     } else if (statusFilter === "past") {
-      matchesStatus = isPast || booking.status === "COMPLETED";
+      matchesStatus = !isUpcoming;
     } else if (statusFilter === "confirmed") {
       matchesStatus = booking.status === "CONFIRMED";
     } else if (statusFilter === "pending") {
       matchesStatus = booking.status === "PENDING";
     } else if (statusFilter === "cancelled") {
-      matchesStatus =
-        booking.status === "CANCELLED" || booking.status === "REJECTED";
-    }
-
-    // Date filter
-    let matchesDate = true;
-    if (dateFilter === "thisMonth") {
-      const thisMonth = new Date().getMonth();
-      const bookingMonth = bookingDate.getMonth();
-      matchesDate = bookingMonth === thisMonth;
-    } else if (dateFilter === "nextMonth") {
-      const nextMonth = new Date().getMonth() + 1;
-      const bookingMonth = bookingDate.getMonth();
-      matchesDate = bookingMonth === nextMonth;
+      matchesStatus = booking.status === "CANCELLED";
     }
 
     // Search filter
+    const guideName = getGuideName(booking.listing);
     const matchesSearch =
       searchTerm === "" ||
       booking.listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.listing.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.listing.guide.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      guideName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesStatus && matchesDate && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
 
   // Sort by date (closest first)
@@ -148,57 +202,51 @@ const MyTripsPage = () => {
   // Calculate statistics
   const stats = {
     total: bookings.length,
-    upcoming: bookings.filter(
-      (b) =>
-        new Date(b.date) >= new Date() &&
-        (b.status === "CONFIRMED" || b.status === "PENDING")
-    ).length,
-    past: bookings.filter(
-      (b) => new Date(b.date) < new Date() || b.status === "COMPLETED"
-    ).length,
-    completed: bookings.filter((b) => b.status === "COMPLETED").length,
-    cancelled: bookings.filter(
-      (b) => b.status === "CANCELLED" || b.status === "REJECTED"
-    ).length,
+    upcoming: bookings.filter((b) => {
+      const today = new Date();
+      const bookingDate = new Date(b.date);
+      return bookingDate >= today && b.status !== "CANCELLED";
+    }).length,
+    pending: bookings.filter((b) => b.status === "PENDING").length,
+    confirmed: bookings.filter((b) => b.status === "CONFIRMED").length,
+    cancelled: bookings.filter((b) => b.status === "CANCELLED").length,
     totalSpent: bookings
-      .filter((b) => b.status === "COMPLETED")
-      .reduce((sum, b) => sum + b.totalPrice, 0),
+      .filter((b) => b.status !== "CANCELLED")
+      .reduce(
+        (sum, b) => sum + (b.totalPrice || b.listing.fee * b.groupSize),
+        0
+      ),
   };
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
   // Get status badge
-  const StatusBadge = ({
-    status,
-    date,
-  }: {
-    status: Booking["status"];
-    date: string;
-  }) => {
-    const bookingDate = new Date(date);
-    const today = new Date();
-    const isUpcoming = bookingDate >= today;
-
+  // Update the StatusBadge component to include COMPLETED
+  const StatusBadge = ({ status }: { status: string }) => {
+    // Change type to string
     const config = {
       PENDING: {
         color: "bg-yellow-100 text-yellow-800",
         icon: <AlertCircle className="w-3 h-3" />,
-        text: "Pending Approval",
+        text: "Pending",
       },
       CONFIRMED: {
         color: "bg-blue-100 text-blue-800",
         icon: <CheckCircle className="w-3 h-3" />,
-        text: isUpcoming ? "Confirmed - Upcoming" : "Confirmed - Past",
+        text: "Confirmed",
       },
       COMPLETED: {
         color: "bg-green-100 text-green-800",
@@ -210,18 +258,20 @@ const MyTripsPage = () => {
         icon: <XCircle className="w-3 h-3" />,
         text: "Cancelled",
       },
-      REJECTED: {
-        color: "bg-gray-100 text-gray-800",
-        icon: <XCircle className="w-3 h-3" />,
-        text: "Rejected by Guide",
-      },
     };
 
-    const { color, icon, text } = config[status];
+    // Get config or use default for unknown status
+    const statusConfig = config[status as keyof typeof config] || {
+      color: "bg-gray-100 text-gray-800",
+      icon: <AlertCircle className="w-3 h-3" />,
+      text: status,
+    };
+
+    const { color, icon, text } = statusConfig;
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${color}`}
+        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${color}`}
       >
         {icon}
         {text}
@@ -258,63 +308,75 @@ const MyTripsPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-700 font-medium">Upcoming</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {stats.upcoming}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-xl border border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-green-700 font-medium">Completed</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {stats.completed}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-5 rounded-xl border border-purple-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-purple-700 font-medium">
-                  Total Trips
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
+                <p className="text-sm text-blue-700 font-medium">Total</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   {stats.total}
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Calendar className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-5 rounded-xl border border-orange-200">
+          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 rounded-xl border border-yellow-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-orange-700 font-medium">
+                <p className="text-sm text-yellow-700 font-medium">Pending</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.pending}
+                </p>
+              </div>
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-700 font-medium">Confirmed</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.confirmed}
+                </p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-700 font-medium">Cancelled</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.cancelled}
+                </p>
+              </div>
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-700 font-medium">
                   Total Spent
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   ${stats.totalSpent}
                 </p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-orange-600" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-purple-600" />
               </div>
             </div>
           </div>
@@ -335,30 +397,17 @@ const MyTripsPage = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="pending">Pending Approval</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="past">Past & Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-            >
-              <option value="all">All Dates</option>
-              <option value="thisMonth">This Month</option>
-              <option value="nextMonth">Next Month</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
       </div>
 
@@ -369,6 +418,12 @@ const MyTripsPage = () => {
             const bookingDate = new Date(booking.date);
             const today = new Date();
             const isUpcoming = bookingDate >= today;
+            const guideName = getGuideName(booking.listing);
+            const guideInitials = getGuideInitials(booking.listing);
+            const guideId =
+              typeof booking.listing.guide === "string"
+                ? booking.listing.guide
+                : booking.listing.guide._id;
 
             return (
               <div
@@ -384,7 +439,7 @@ const MyTripsPage = () => {
                           <h3 className="font-bold text-gray-900 text-lg mb-1">
                             {booking.listing.title}
                           </h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               {booking.listing.city}
@@ -395,17 +450,15 @@ const MyTripsPage = () => {
                             </span>
                             <span className="flex items-center gap-1">
                               <Users className="w-3 h-3" />
-                              {booking.groupSize} people
+                              {booking.groupSize} person
+                              {booking.groupSize !== 1 ? "s" : ""}
                             </span>
                           </div>
                         </div>
-                        <StatusBadge
-                          status={booking.status}
-                          date={booking.date}
-                        />
+                        <StatusBadge status={booking.status} />
                       </div>
 
-                      {/* Price and Duration */}
+                      {/* Details Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="bg-blue-50 p-3 rounded-lg">
                           <div className="text-xs text-blue-700 font-medium mb-1">
@@ -413,7 +466,8 @@ const MyTripsPage = () => {
                           </div>
                           <div className="flex items-center text-lg font-bold text-gray-900">
                             <DollarSign className="w-4 h-4 mr-1" />
-                            {booking.totalPrice}
+                            {booking.totalPrice ||
+                              booking.listing.fee * booking.groupSize}
                           </div>
                         </div>
 
@@ -438,7 +492,7 @@ const MyTripsPage = () => {
                     </div>
 
                     {/* Right Column - Guide Info & Actions */}
-                    <div className="lg:w-64 border-l lg:border-l-0 lg:border-t lg:pt-6 lg:pl-6">
+                    <div className="lg:w-64 border-t lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0 pt-4">
                       {/* Guide Info */}
                       <div className="mb-4">
                         <div className="text-sm font-medium text-gray-900 mb-3">
@@ -446,11 +500,11 @@ const MyTripsPage = () => {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                            {booking.listing.guide.name?.charAt(0) || "G"}
+                            {guideInitials}
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">
-                              {booking.listing.guide.name}
+                              {guideName}
                             </div>
                             <div className="text-xs text-gray-600">
                               Local Guide
@@ -462,40 +516,19 @@ const MyTripsPage = () => {
                       {/* Action Buttons */}
                       <div className="space-y-2">
                         <Link
-                          href={`/my-trips/${booking._id}`}
+                          href={`/tours/${booking?.listing?._id}`}
                           className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           <Eye className="w-4 h-4" />
                           View Details
                         </Link>
 
-                        <Link
-                          href={`/tours/${booking.listing._id}`}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          View Tour
-                        </Link>
-
-                        {isUpcoming && booking.status === "CONFIRMED" && (
-                          <button
-                            onClick={() => {
-                              // Cancel booking logic
-                              toast.info("Cancellation feature coming soon");
-                            }}
-                            className="w-full px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors text-sm"
-                          >
-                            Cancel Booking
-                          </button>
-                        )}
-
-                        {booking.status === "COMPLETED" && (
+                        {guideId && (
                           <Link
-                            href={`/reviews/new?booking=${booking._id}`}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            href={`/profile/${guideId}`}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                           >
-                            <Star className="w-4 h-4" />
-                            Leave Review
+                            View Guide Profile
                           </Link>
                         )}
                       </div>
@@ -513,7 +546,7 @@ const MyTripsPage = () => {
             No trips found
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchTerm || statusFilter !== "all" || dateFilter !== "all"
+            {searchTerm || statusFilter !== "all"
               ? "Try adjusting your search or filters"
               : "You haven't booked any tours yet"}
           </p>

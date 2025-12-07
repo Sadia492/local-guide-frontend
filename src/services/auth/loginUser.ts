@@ -62,11 +62,11 @@ export const loginUser = async (prevState: any, formData: FormData) => {
     const role = result.data?.user?.role || "tourist";
 
     if (role === "GUIDE") {
-      redirect("/dashboard/guide");
+      redirect("/dashboard/guide/my-listings");
     } else if (role === "ADMIN") {
-      redirect("/dashboard/admin");
+      redirect("/dashboard/admin/users");
     } else {
-      redirect("/dashboard/tourist");
+      redirect("/dashboard/tourist/wishlist");
     }
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) {

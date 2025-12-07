@@ -105,7 +105,7 @@ const ProfilePage = () => {
 
         // CORRECTED: Fetch from the right endpoint
         const response = await fetch(
-          `http://localhost:5000/api/user/profile-details`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile-details/${userId}`,
           {
             credentials: "include",
             headers: {

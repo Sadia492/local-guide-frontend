@@ -32,11 +32,11 @@ export function ProtectedRoute({
 
         // Redirect based on role
         if (user.role === "TOURIST") {
-          router.push("/dashboard/tourist");
+          router.push("/dashboard/tourist/wishlist");
         } else if (user.role === "GUIDE") {
-          router.push("/dashboard/guide");
+          router.push("/dashboard/guide/my-listings");
         } else if (user.role === "ADMIN") {
-          router.push("/dashboard/admin");
+          router.push("/dashboard/admin/users");
         } else {
           router.push("/");
         }

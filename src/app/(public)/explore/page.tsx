@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -9,12 +9,14 @@ import {
   Users,
   Star,
   Clock,
+  User,
+  Globe,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -23,161 +25,213 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
-// Mock data - replace with actual API calls
-const mockTours = [
-  {
-    id: 1,
-    title: "Hidden Jazz Bars of New Orleans",
-    description: "Explore the secret jazz scene with a local musician",
-    price: 89,
-    duration: 4,
-    category: "Nightlife",
-    rating: 4.9,
-    reviewCount: 127,
-    city: "New Orleans",
-    guide: {
-      name: "Louis Armstrong",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      languages: ["English", "French"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80",
-    maxGroupSize: 6,
-  },
-  {
-    id: 2,
-    title: "Tokyo Street Food Adventure",
-    description: "Taste authentic street food in Shibuya and Shinjuku",
-    price: 65,
-    duration: 3.5,
-    category: "Food",
-    rating: 4.8,
-    reviewCount: 89,
-    city: "Tokyo",
-    guide: {
-      name: "Yuki Tanaka",
-      avatar: "https://i.pravatar.cc/150?img=2",
-      languages: ["Japanese", "English"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1547592180-85f173990554?w-800&q=80",
-    maxGroupSize: 8,
-  },
-  {
-    id: 3,
-    title: "Ancient Rome History Walk",
-    description: "Step back in time with a history professor",
-    price: 75,
-    duration: 5,
-    category: "History",
-    rating: 4.7,
-    reviewCount: 203,
-    city: "Rome",
-    guide: {
-      name: "Marco Rossi",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      languages: ["Italian", "English", "Spanish"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w-800&q=80",
-    maxGroupSize: 10,
-  },
-  {
-    id: 4,
-    title: "Parisian Art & Architecture",
-    description: "Discover Montmartre's artistic heritage",
-    price: 95,
-    duration: 4,
-    category: "Art",
-    rating: 4.9,
-    reviewCount: 156,
-    city: "Paris",
-    guide: {
-      name: "Sophie Martin",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      languages: ["French", "English"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&q=80",
-    maxGroupSize: 6,
-  },
-  {
-    id: 5,
-    title: "Istanbul Bazaar Experience",
-    description: "Navigate the Grand Bazaar like a local",
-    price: 55,
-    duration: 3,
-    category: "Shopping",
-    rating: 4.6,
-    reviewCount: 94,
-    city: "Istanbul",
-    guide: {
-      name: "Mehmet Yılmaz",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      languages: ["Turkish", "English", "Arabic"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1527838832700-5059252407fa?w=800&q=80",
-    maxGroupSize: 12,
-  },
-  {
-    id: 6,
-    title: "Bali Waterfall Trekking",
-    description: "Private guided trek to hidden waterfalls",
-    price: 120,
-    duration: 7,
-    category: "Adventure",
-    rating: 4.8,
-    reviewCount: 67,
-    city: "Bali",
-    guide: {
-      name: "Kadek Wijaya",
-      avatar: "https://i.pravatar.cc/150?img=6",
-      languages: ["Indonesian", "English"],
-    },
-    image:
-      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80",
-    maxGroupSize: 4,
-  },
-];
+interface Listing {
+  _id: string;
+  title: string;
+  description: string;
+  itinerary?: string;
+  city: string;
+  category: string;
+  fee: number;
+  duration: number;
+  meetingPoint: string;
+  maxGroupSize: number;
+  images: string[];
+  language?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  guide: {
+    _id: string;
+    name: string;
+    profilePicture?: string;
+  };
+}
+
+interface UserData {
+  _id: string;
+  name: string;
+  email: string;
+  profilePicture?: string;
+  role: "TOURIST" | "GUIDE" | "ADMIN";
+  bio?: string;
+  location?: string;
+  languages?: string[];
+  expertise?: string[];
+  dailyRate?: number;
+  travelPreferences?: string[];
+  isVerified?: boolean;
+  isActive?: boolean;
+  createdAt: string;
+}
 
 const categories = [
+  "Adventure",
   "Food",
   "History",
   "Art",
   "Nightlife",
-  "Adventure",
   "Shopping",
   "Nature",
   "Photography",
   "Family",
   "Luxury",
+  "Cultural",
+  "Sports",
 ];
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [priceRange, setPriceRange] = useState([0, 200]);
+  const [priceRange, setPriceRange] = useState([0, 1000]);
   const [duration, setDuration] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
-  const filteredTours = mockTours.filter((tour) => {
+  useEffect(() => {
+    fetchListings();
+    checkAuth();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/listing`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch listings: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Filter only active listings
+        const activeListings = data.data.filter(
+          (listing: Listing) => listing.isActive
+        );
+        setListings(activeListings);
+
+        // Calculate max price for slider
+        if (activeListings.length > 0) {
+          const maxPrice = Math.max(
+            ...activeListings.map((l: Listing) => l.fee)
+          );
+          setPriceRange([0, Math.ceil(maxPrice / 100) * 100]); // Round up to nearest 100
+        }
+      } else {
+        setListings([]);
+      }
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      setError("Failed to load tours. Please try again later.");
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
+        { credentials: "include" }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsAuthenticated(true);
+        setCurrentUser(data.data);
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      console.error("Error checking auth:", error);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const filteredTours = listings.filter((tour) => {
     const matchesSearch =
+      searchQuery === "" ||
       tour.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tour.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tour.description.toLowerCase().includes(searchQuery.toLowerCase());
+      tour.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tour.category.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory =
       !selectedCategory || tour.category === selectedCategory;
-    const matchesPrice =
-      tour.price >= priceRange[0] && tour.price <= priceRange[1];
+    const matchesPrice = tour.fee >= priceRange[0] && tour.fee <= priceRange[1];
 
     const matchesDuration = !duration || tour.duration <= duration;
 
     return matchesSearch && matchesCategory && matchesPrice && matchesDuration;
   });
+
+  const handleViewDetails = (listingId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      const loginUrl = `/login?redirect=${encodeURIComponent(
+        `/tours/${listingId}`
+      )}`;
+      window.location.href = loginUrl;
+      return;
+    }
+    // If authenticated, navigate to tour details
+    window.location.href = `/tours/${listingId}`;
+  };
+
+  const handleBookNow = (listingId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      const loginUrl = `/login?redirect=${encodeURIComponent(
+        `/tours/${listingId}?booking=true`
+      )}`;
+      window.location.href = loginUrl;
+      return;
+    }
+    // If authenticated, navigate to tour details with booking intent
+    window.location.href = `/tours/${listingId}?booking=true`;
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      Adventure: "bg-green-100 text-green-800 hover:bg-green-200",
+      Food: "bg-red-100 text-red-800 hover:bg-red-200",
+      History: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+      Art: "bg-purple-100 text-purple-800 hover:bg-purple-200",
+      Nightlife: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
+      Shopping: "bg-pink-100 text-pink-800 hover:bg-pink-200",
+      Nature: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+      Photography: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+      Cultural: "bg-orange-100 text-orange-800 hover:bg-orange-200",
+    };
+    return colors[category] || "bg-gray-100 text-gray-800 hover:bg-gray-200";
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading tours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -186,10 +240,10 @@ export default function ExplorePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Discover Amazing Experiences
+              Discover Amazing Local Experiences
             </h1>
             <p className="text-xl text-blue-100 mb-8">
-              Find the perfect local guide for your next adventure
+              Connect with local guides for authentic adventures
             </p>
           </div>
 
@@ -197,10 +251,10 @@ export default function ExplorePage() {
           <div className="bg-white rounded-2xl shadow-2xl p-4 max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
                   type="text"
-                  placeholder="Search destinations, tours, or guides..."
+                  placeholder="Search destinations, tours, or categories..."
                   className="pl-12 text-gray-900 h-14 text-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -209,11 +263,11 @@ export default function ExplorePage() {
               <Button
                 variant="primary"
                 size="lg"
-                className="md:w-auto w-full h-14 text-lg"
+                className="md:w-auto w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Filter className="w-5 h-5 mr-2" />
-                Filters
+                {showFilters ? "Hide Filters" : "Show Filters"}
               </Button>
             </div>
 
@@ -226,7 +280,12 @@ export default function ExplorePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category
                     </label>
-                    <Select onValueChange={setSelectedCategory}>
+                    <Select
+                      value={selectedCategory || "all"}
+                      onValueChange={(value) =>
+                        setSelectedCategory(value === "all" ? null : value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
@@ -247,13 +306,17 @@ export default function ExplorePage() {
                       Price Range: ${priceRange[0]} - ${priceRange[1]}
                     </label>
                     <Slider
-                      defaultValue={[0, 200]}
-                      max={200}
+                      min={0}
+                      max={priceRange[1] > 1000 ? priceRange[1] : 1000}
                       step={10}
                       value={priceRange}
                       onValueChange={setPriceRange}
                       className="w-full"
                     />
+                    <div className="flex justify-between text-sm text-gray-500 mt-2">
+                      <span>${priceRange[0]}</span>
+                      <span>${priceRange[1]}</span>
+                    </div>
                   </div>
 
                   {/* Duration Filter */}
@@ -262,6 +325,7 @@ export default function ExplorePage() {
                       Max Duration (hours)
                     </label>
                     <Select
+                      value={duration?.toString() || "any"}
                       onValueChange={(value) =>
                         setDuration(value === "any" ? null : parseInt(value))
                       }
@@ -275,6 +339,8 @@ export default function ExplorePage() {
                         <SelectItem value="4">Up to 4 hours</SelectItem>
                         <SelectItem value="6">Up to 6 hours</SelectItem>
                         <SelectItem value="8">Up to 8 hours</SelectItem>
+                        <SelectItem value="12">Up to 12 hours</SelectItem>
+                        <SelectItem value="24">Up to 24 hours</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -282,17 +348,22 @@ export default function ExplorePage() {
                   {/* Group Size */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Group Size
+                      Sort By
                     </label>
-                    <Select>
+                    <Select defaultValue="relevance">
                       <SelectTrigger>
-                        <SelectValue placeholder="Any size" />
+                        <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="any">Any size</SelectItem>
-                        <SelectItem value="small">Small (1-4)</SelectItem>
-                        <SelectItem value="medium">Medium (5-8)</SelectItem>
-                        <SelectItem value="large">Large (9+)</SelectItem>
+                        <SelectItem value="relevance">Most Relevant</SelectItem>
+                        <SelectItem value="price_low">
+                          Price: Low to High
+                        </SelectItem>
+                        <SelectItem value="price_high">
+                          Price: High to Low
+                        </SelectItem>
+                        <SelectItem value="duration">Duration</SelectItem>
+                        <SelectItem value="newest">Newest First</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -304,13 +375,17 @@ export default function ExplorePage() {
                     Popular Categories
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {categories.slice(0, 6).map((category) => (
+                    {categories.slice(0, 8).map((category) => (
                       <Badge
                         key={category}
                         variant={
                           selectedCategory === category ? "default" : "outline"
                         }
-                        className="cursor-pointer hover:bg-blue-100"
+                        className={`cursor-pointer ${
+                          selectedCategory === category
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : ""
+                        }`}
                         onClick={() =>
                           setSelectedCategory(
                             selectedCategory === category ? null : category
@@ -329,6 +404,21 @@ export default function ExplorePage() {
                     </Badge>
                   </div>
                 </div>
+
+                {/* Reset Filters */}
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedCategory(null);
+                      setPriceRange([0, Math.max(1000, priceRange[1])]);
+                      setDuration(null);
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -338,13 +428,19 @@ export default function ExplorePage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Results Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {filteredTours.length} Tours Found
+              {filteredTours.length}{" "}
+              {filteredTours.length === 1 ? "Tour" : "Tours"} Found
             </h2>
             {searchQuery && (
               <p className="text-gray-600 mt-1">Results for "{searchQuery}"</p>
+            )}
+            {selectedCategory && (
+              <p className="text-gray-600 text-sm mt-1">
+                Category: {selectedCategory}
+              </p>
             )}
           </div>
           <div className="flex items-center space-x-4">
@@ -354,24 +450,49 @@ export default function ExplorePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="relevance">Most Relevant</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
                 <SelectItem value="price_low">Price: Low to High</SelectItem>
                 <SelectItem value="price_high">Price: High to Low</SelectItem>
                 <SelectItem value="duration">Duration</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Tours Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredTours.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
-          ))}
-        </div>
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="flex items-center">
+              <span className="font-medium">Error:</span>
+              <span className="ml-2">{error}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={fetchListings}
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
 
-        {/* Empty State */}
-        {filteredTours.length === 0 && (
+        {/* Tours Grid */}
+        {filteredTours.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredTours.map((tour) => (
+              <TourCard
+                key={tour._id}
+                tour={tour}
+                isAuthenticated={isAuthenticated}
+                onViewDetails={handleViewDetails}
+                onBookNow={handleBookNow}
+                getCategoryColor={getCategoryColor}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
               <Search className="w-12 h-12 text-blue-600" />
@@ -380,19 +501,24 @@ export default function ExplorePage() {
               No tours found
             </h3>
             <p className="text-gray-600 mb-6">
-              Try adjusting your search or filters to find more results
+              {error
+                ? "Error loading tours. Please try again."
+                : "Try adjusting your search or filters to find more results"}
             </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory(null);
-                setPriceRange([0, 200]);
-                setDuration(null);
-              }}
-            >
-              Clear all filters
-            </Button>
+            {!error && (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory(null);
+                  setPriceRange([0, Math.max(1000, priceRange[1])]);
+                  setDuration(null);
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Clear all filters
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -401,87 +527,133 @@ export default function ExplorePage() {
 }
 
 // Tour Card Component
-function TourCard({ tour }: { tour: (typeof mockTours)[0] }) {
+function TourCard({
+  tour,
+  isAuthenticated,
+  onViewDetails,
+  onBookNow,
+  getCategoryColor,
+}: {
+  tour: Listing;
+  isAuthenticated: boolean;
+  onViewDetails: (id: string) => void;
+  onBookNow: (id: string) => void;
+  getCategoryColor: (category: string) => string;
+}) {
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
-        <img
-          src={tour.image}
-          alt={tour.title}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-        />
+        {tour.images && tour.images.length > 0 ? (
+          <img
+            src={tour.images[0]}
+            alt={tour.title}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-400 to-purple-500">
+            <MapPin className="w-12 h-12 text-white/50" />
+          </div>
+        )}
         <div className="absolute top-4 right-4">
-          <Badge className="bg-white/90 text-gray-800 hover:bg-white">
+          <Badge className={`${getCategoryColor(tour.category)}`}>
             {tour.category}
+          </Badge>
+        </div>
+        <div className="absolute bottom-4 left-4">
+          <Badge variant="secondary" className="bg-white/90 text-gray-800">
+            ${tour.fee} / person
           </Badge>
         </div>
       </div>
 
       <CardContent className="flex-1 p-6 flex flex-col">
-        {/* Title and Rating */}
+        {/* Title and Location */}
         <div className="mb-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-xl font-bold text-gray-900 line-clamp-1">
-              {tour.title}
-            </h3>
-            <div className="flex items-center">
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="ml-1 font-semibold">{tour.rating}</span>
-              <span className="text-gray-500 text-sm ml-1">
-                ({tour.reviewCount})
-              </span>
-            </div>
+          <h3 className="text-xl font-bold text-gray-900 line-clamp-1 mb-2">
+            {tour.title}
+          </h3>
+          <div className="flex items-center text-gray-600 mb-2">
+            <MapPin className="w-4 h-4 mr-2" />
+            <span className="text-sm">{tour.city}</span>
           </div>
-          <p className="text-gray-600 line-clamp-2 mb-3">{tour.description}</p>
+          <p className="text-gray-600 line-clamp-2 text-sm">
+            {tour.description}
+          </p>
         </div>
 
-        {/* Location */}
-        <div className="flex items-center text-gray-600 mb-4">
-          <MapPin className="w-4 h-4 mr-2" />
-          <span className="text-sm">{tour.city}</span>
+        {/* Guide Info */}
+        <div className="flex items-center mb-6">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+              tour.guide.profilePicture
+                ? ""
+                : "bg-gradient-to-r from-green-400 to-emerald-500 text-white"
+            }`}
+          >
+            {tour.guide.profilePicture ? (
+              <img
+                src={tour.guide.profilePicture}
+                alt={tour.guide.name}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="w-6 h-6" />
+            )}
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900">{tour.guide.name}</p>
+            <Link
+              href={`/profile/${tour.guide._id}`}
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View Profile
+            </Link>
+          </div>
         </div>
 
         {/* Details */}
         <div className="flex items-center justify-between text-sm text-gray-600 mb-6">
           <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
+            <Clock className="w-4 h-4 mr-2" />
             <span>{tour.duration} hours</span>
           </div>
           <div className="flex items-center">
-            <Users className="w-4 h-4 mr-1" />
+            <Users className="w-4 h-4 mr-2" />
             <span>Max {tour.maxGroupSize} people</span>
           </div>
+          {tour.language && (
+            <div className="flex items-center">
+              <Globe className="w-4 h-4 mr-1" />
+              <span>{tour.language}</span>
+            </div>
+          )}
         </div>
 
-        {/* Guide Info */}
-        <div className="flex items-center mb-6">
-          <img
-            src={tour.guide.avatar}
-            alt={tour.guide.name}
-            className="w-10 h-10 rounded-full mr-3"
-          />
-          <div>
-            <p className="font-semibold text-gray-900">{tour.guide.name}</p>
-            <p className="text-sm text-gray-600">
-              Speaks {tour.guide.languages.join(", ")}
-            </p>
-          </div>
+        {/* Action Buttons */}
+        <div className="mt-auto flex flex-col sm:flex-row gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onViewDetails(tour._id)}
+          >
+            View Details
+          </Button>
+          <Button
+            variant="primary"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => onBookNow(tour._id)}
+          >
+            Book Now
+          </Button>
         </div>
 
-        {/* Price and Action */}
-        <div className="mt-auto flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-gray-900">
-              ${tour.price}
-              <span className="text-sm font-normal text-gray-600">
-                {" "}
-                / person
-              </span>
-            </p>
-          </div>
-          <Button variant="primary">View Details</Button>
-        </div>
+        {!isAuthenticated && (
+          <p className="text-xs text-gray-500 text-center mt-2">
+            Login required to book
+          </p>
+        )}
       </CardContent>
     </Card>
   );

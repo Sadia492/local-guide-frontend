@@ -61,7 +61,7 @@ export function Navbar() {
                 {user.role === "GUIDE" && (
                   <>
                     <Link
-                      href="/dashboard/guide"
+                      href="/dashboard/guide/my-listings"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       Dashboard
@@ -78,7 +78,7 @@ export function Navbar() {
                 {user.role === "ADMIN" && (
                   <>
                     <Link
-                      href="/dashboard/admin"
+                      href="/dashboard/admin/bookings"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       Admin Dashboard
@@ -101,7 +101,7 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist"
+                      href="/dashboard/tourist/wishlist"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       Dashboard
@@ -141,7 +141,7 @@ export function Navbar() {
               // User is not logged in
               <>
                 <Link
-                  href="/become-a-guide"
+                  href="/become-guide"
                   className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 >
                   Become a Guide
@@ -195,7 +195,7 @@ export function Navbar() {
                 {user.role === "GUIDE" && (
                   <>
                     <Link
-                      href="/dashboard/guide"
+                      href="/dashboard/guide/my-listings"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -214,7 +214,7 @@ export function Navbar() {
                 {user.role === "ADMIN" && (
                   <>
                     <Link
-                      href="/dashboard/admin"
+                      href="/dashboard/admin/bookings"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -238,7 +238,7 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist"
+                      href="/dashboard/tourist/wishlist"
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -281,7 +281,7 @@ export function Navbar() {
               // User is not logged in (mobile)
               <>
                 <Link
-                  href="/become-a-guide"
+                  href="/become-guide"
                   className="block text-gray-700 hover:text-blue-600 font-medium py-2"
                   onClick={() => setIsMenuOpen(false)}
                 >

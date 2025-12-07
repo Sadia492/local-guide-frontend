@@ -132,7 +132,7 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
       <div className="flex-1 w-full lg:ml-64 lg:w-auto transition-all duration-300">
         <div className="min-h-screen overflow-auto p-6">
           {/* Welcome message */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">
               Welcome back, {user.name}!
             </h1>
@@ -141,7 +141,7 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
               {user.role === "GUIDE" && "Manage your tours and bookings"}
               {user.role === "ADMIN" && "Manage platform users and content"}
             </p>
-          </div>
+          </div> */}
 
           {/* Dashboard content */}
           {children}

@@ -201,11 +201,11 @@ function RegisterPage() {
           const role = data.data?.user?.role || formData.role.toUpperCase();
 
           if (role === "GUIDE" || role === "guide") {
-            router.push("/dashboard/guide");
+            router.push("/dashboard/guide/my-listings");
           } else if (role === "ADMIN" || role === "admin") {
-            router.push("/dashboard/admin");
+            router.push("/dashboard/admin/users");
           } else {
-            router.push("/dashboard/tourist");
+            router.push("/dashboard/tourist/wishlist");
           }
 
           router.refresh();

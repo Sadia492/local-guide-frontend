@@ -323,173 +323,79 @@ export default function BecomeAGuidePage() {
           </div>
         </section>
 
-        {/* Application Form */}
+        {/* // Instead of the full application form, have this: */}
+
         <section className="mb-20">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 text-center">
                 <h2 className="text-3xl font-bold mb-4">
-                  Ready to Get Started?
+                  Ready to Start Your Journey?
                 </h2>
                 <p className="text-blue-100">
                   Join our community of passionate local guides
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      required
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      required
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City & Region *
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    required
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="Where will you be guiding?"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Languages */}
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Languages You Speak *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {languageOptions.map((language) => (
-                      <div key={language} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`lang-${language}`}
-                          checked={formData.languages.includes(language)}
-                          onChange={() =>
-                            handleCheckboxChange("languages", language)
-                          }
-                          className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <label htmlFor={`lang-${language}`} className="ml-2">
-                          {language}
-                        </label>
+              <div className="p-12 text-center">
+                <div className="max-w-2xl mx-auto">
+                  <div className="mb-8">
+                    <h3 className="text-2xl font-bold mb-4">
+                      Get Started in 3 Easy Steps
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <div className="p-4">
+                        <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                          1
+                        </div>
+                        <h4 className="font-semibold mb-2">
+                          Register as Guide
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          Create your account with guide role
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Interests */}
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Areas of Interest / Expertise *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {interestOptions.map((interest) => (
-                      <div key={interest} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`interest-${interest}`}
-                          checked={formData.interests.includes(interest)}
-                          onChange={() =>
-                            handleCheckboxChange("interests", interest)
-                          }
-                          className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <label
-                          htmlFor={`interest-${interest}`}
-                          className="ml-2"
-                        >
-                          {interest}
-                        </label>
+                      <div className="p-4">
+                        <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                          2
+                        </div>
+                        <h4 className="font-semibold mb-2">Complete Profile</h4>
+                        <p className="text-gray-600 text-sm">
+                          Add your expertise, photos, and bio
+                        </p>
                       </div>
-                    ))}
+                      <div className="p-4">
+                        <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                          3
+                        </div>
+                        <h4 className="font-semibold mb-2">
+                          Create First Tour
+                        </h4>
+                        <p className="text-gray-600 text-sm">
+                          List your unique tour experience
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Why do you want to become a guide? *
-                  </label>
-                  <textarea
-                    name="experience"
-                    required
-                    value={formData.experience}
-                    onChange={handleInputChange}
-                    rows={4}
-                    placeholder="Tell us about your experience, passion for your city, and why you'd make a great guide..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-12 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-lg"
+                  <Link
+                    href="/register?role=guide"
+                    className="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-12 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-lg text-lg"
                   >
-                    Apply Now - It's Free!
-                  </button>
-                  <p className="text-gray-600 mt-4 text-sm">
-                    By applying, you agree to our Terms of Service and Privacy
-                    Policy
+                    Get Started Now - It's Free!
+                  </Link>
+
+                  <p className="text-gray-600 mt-6">
+                    Already have an account?{" "}
+                    <Link
+                      href="/login"
+                      className="text-blue-600 font-semibold hover:underline"
+                    >
+                      Sign in here
+                    </Link>
                   </p>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         </section>

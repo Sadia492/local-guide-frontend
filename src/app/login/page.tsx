@@ -34,11 +34,11 @@ function LoginPage() {
           // Default redirect based on role
           const userRole = user.role;
           if (userRole === "GUIDE" || userRole === "guide") {
-            router.push("/dashboard/guide");
+            router.push("/dashboard/guide/my-listings");
           } else if (userRole === "ADMIN" || userRole === "admin") {
-            router.push("/dashboard/admin");
+            router.push("/dashboard/admin/users");
           } else {
-            router.push("/dashboard/tourist");
+            router.push("/dashboard/tourist/wishlist");
           }
         }
       }, 500); // Small delay to prevent immediate redirect during page load
