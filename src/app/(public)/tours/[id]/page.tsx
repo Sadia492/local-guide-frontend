@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from "@/actions/useAuth";
+import Swal from "sweetalert2";
 
 interface Listing {
   _id: string;
@@ -296,7 +297,6 @@ const ListingDetails = () => {
 
     try {
       setCheckingBooking(true);
-      // Fetch user's bookings
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/booking/my-bookings`,
         {
@@ -308,6 +308,7 @@ const ListingDetails = () => {
         const data = await response.json();
         if (data.success && data.data) {
           // Check if user has booked this specific listing
+          // Include CANCELLED bookings too, but mark them differently
           const existingBooking = data.data.find(
             (booking: any) => booking.listing._id === listing._id
           );
@@ -322,11 +323,18 @@ const ListingDetails = () => {
               totalPrice: existingBooking.totalPrice,
               createdAt: existingBooking.createdAt,
             });
+          } else {
+            // If no booking found, set to null
+            setUserBooking(null);
           }
+        } else {
+          // No bookings found
+          setUserBooking(null);
         }
       }
     } catch (error) {
       console.error("Error checking user booking:", error);
+      setUserBooking(null);
     } finally {
       setCheckingBooking(false);
     }
@@ -524,7 +532,71 @@ const ListingDetails = () => {
     setWishlisted(!wishlisted);
     toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist");
   };
+  const handleCancelBooking = async (bookingId: string) => {
+    const result = await Swal.fire({
+      title: "Cancel Booking Request",
+      text: "Are you sure you want to cancel this booking request?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel",
+      cancelButtonText: "Keep Booking",
+      reverseButtons: true,
+    });
 
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ status: "CANCELLED" }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to cancel booking");
+        }
+
+        const data = await response.json();
+
+        // Update the userBooking state to show cancelled
+        setUserBooking((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "CANCELLED",
+              }
+            : null
+        );
+
+        toast.success("Booking cancelled", {
+          description: "Your booking request has been cancelled",
+          action: {
+            label: "View",
+            onClick: () => router.push("/dashboard/tourist/my-trips"),
+          },
+        });
+
+        // Force a re-check of booking status
+        setTimeout(() => {
+          checkUserBooking();
+        }, 500);
+      } catch (error) {
+        console.error("Error cancelling booking:", error);
+        toast.error("Failed to cancel booking", {
+          description:
+            error instanceof Error ? error.message : "Please try again later",
+        });
+      }
+    }
+  };
   const nextImage = () => {
     if (listing?.images) {
       setSelectedImageIndex((prev) =>
@@ -1061,9 +1133,7 @@ const ListingDetails = () => {
 
                       {userBooking.status === "PENDING" && (
                         <button
-                          onClick={() => {
-                            toast.info("Cancellation feature coming soon");
-                          }}
+                          onClick={() => handleCancelBooking(userBooking._id)}
                           className="w-full py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
                         >
                           Cancel Request

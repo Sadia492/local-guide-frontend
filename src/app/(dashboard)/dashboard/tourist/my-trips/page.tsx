@@ -1,4 +1,4 @@
-// app/dashboard/my-trips/page.tsx - Fixed version
+// app/dashboard/my-trips/page.tsx - Updated with Pay Now button
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -30,7 +31,7 @@ interface Guide {
 
 interface Listing {
   _id: string;
-  guide: string | Guide; // Can be string (ID) or full Guide object
+  guide: string | Guide;
   title: string;
   city: string;
   fee: number;
@@ -45,7 +46,7 @@ interface Booking {
   date: string;
   groupSize: number;
   totalPrice: number;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED"; // Added COMPLETED
   createdAt: string;
   updatedAt: string;
 }
@@ -55,7 +56,10 @@ const MyTripsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [guides, setGuides] = useState<Record<string, Guide>>({}); // Cache for guide info
+  const [guides, setGuides] = useState<Record<string, Guide>>({});
+  const [processingPayment, setProcessingPayment] = useState<string | null>(
+    null
+  ); // Track which booking is being paid
 
   // Fetch all bookings for the tourist
   const fetchMyTrips = async () => {
@@ -73,7 +77,6 @@ const MyTripsPage = () => {
       }
 
       const data = await response.json();
-      console.log("Bookings data:", data); // Debug log
 
       if (data.success && data.data) {
         setBookings(data.data);
@@ -141,16 +144,48 @@ const MyTripsPage = () => {
     }
   };
 
+  // Handle Pay Now button click
+  const handlePayNow = async (bookingId: string) => {
+    try {
+      setProcessingPayment(bookingId);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/create-payment`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create payment session");
+      }
+
+      if (data.success) {
+        // Redirect to Stripe payment page
+        window.location.href = data.data.paymentUrl;
+      } else {
+        toast.error(data.message || "Failed to create payment");
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      toast.error("Failed to create payment session");
+    } finally {
+      setProcessingPayment(null);
+    }
+  };
+
   useEffect(() => {
     fetchMyTrips();
   }, []);
 
-  // Get guide name from listing (either from object or from cache)
+  // Get guide name from listing
   const getGuideName = (listing: Listing): string => {
     if (typeof listing.guide === "object" && listing.guide !== null) {
       return listing.guide.name || "Local Guide";
     } else if (typeof listing.guide === "string") {
-      // Check if we have guide info in cache
       const guide = guides[listing.guide];
       return guide?.name || "Local Guide";
     }
@@ -179,6 +214,8 @@ const MyTripsPage = () => {
       matchesStatus = booking.status === "CONFIRMED";
     } else if (statusFilter === "pending") {
       matchesStatus = booking.status === "PENDING";
+    } else if (statusFilter === "completed") {
+      matchesStatus = booking.status === "COMPLETED";
     } else if (statusFilter === "cancelled") {
       matchesStatus = booking.status === "CANCELLED";
     }
@@ -199,7 +236,7 @@ const MyTripsPage = () => {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // Calculate statistics
+  // Calculate statistics - Updated to include COMPLETED
   const stats = {
     total: bookings.length,
     upcoming: bookings.filter((b) => {
@@ -209,6 +246,7 @@ const MyTripsPage = () => {
     }).length,
     pending: bookings.filter((b) => b.status === "PENDING").length,
     confirmed: bookings.filter((b) => b.status === "CONFIRMED").length,
+    completed: bookings.filter((b) => b.status === "COMPLETED").length, // Added
     cancelled: bookings.filter((b) => b.status === "CANCELLED").length,
     totalSpent: bookings
       .filter((b) => b.status !== "CANCELLED")
@@ -233,10 +271,8 @@ const MyTripsPage = () => {
     }
   };
 
-  // Get status badge
-  // Update the StatusBadge component to include COMPLETED
+  // Status badge component
   const StatusBadge = ({ status }: { status: string }) => {
-    // Change type to string
     const config = {
       PENDING: {
         color: "bg-yellow-100 text-yellow-800",
@@ -260,7 +296,6 @@ const MyTripsPage = () => {
       },
     };
 
-    // Get config or use default for unknown status
     const statusConfig = config[status as keyof typeof config] || {
       color: "bg-gray-100 text-gray-800",
       icon: <AlertCircle className="w-3 h-3" />,
@@ -307,8 +342,8 @@ const MyTripsPage = () => {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {/* Stats Cards - Updated with COMPLETED */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
@@ -337,12 +372,26 @@ const MyTripsPage = () => {
             </div>
           </div>
 
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Confirmed</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.confirmed}
+                </p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
           <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-700 font-medium">Confirmed</p>
+                <p className="text-sm text-green-700 font-medium">Completed</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.confirmed}
+                  {stats.completed}
                 </p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
@@ -406,6 +455,7 @@ const MyTripsPage = () => {
             <option value="upcoming">Upcoming</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -523,10 +573,60 @@ const MyTripsPage = () => {
                           View Details
                         </Link>
 
-                        {guideId && (
+                        {/* Pay Now button for CONFIRMED bookings */}
+                        {booking.status === "CONFIRMED" && (
+                          <button
+                            onClick={() => handlePayNow(booking._id)}
+                            disabled={processingPayment === booking._id}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingPayment === booking._id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="w-4 h-4" />
+                                Pay Now - $
+                                {booking.totalPrice ||
+                                  booking.listing.fee * booking.groupSize}
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Manage Booking button for PENDING bookings */}
+                        {booking.status === "PENDING" && (
+                          <button
+                            onClick={() => {
+                              toast.info(
+                                "Your booking is pending guide's approval"
+                              );
+                            }}
+                            className="w-full px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg hover:bg-yellow-50 transition-colors text-sm"
+                          >
+                            Awaiting Guide Approval
+                          </button>
+                        )}
+
+                        {/* View Details for COMPLETED bookings */}
+                        {booking.status === "COMPLETED" && (
+                          <button
+                            onClick={() => {
+                              // Add review or view details
+                              toast.success("Tour completed!");
+                            }}
+                            className="w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm"
+                          >
+                            Tour Completed
+                          </button>
+                        )}
+
+                        {guideId && booking.status !== "CANCELLED" && (
                           <Link
                             href={`/profile/${guideId}`}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                           >
                             View Guide Profile
                           </Link>

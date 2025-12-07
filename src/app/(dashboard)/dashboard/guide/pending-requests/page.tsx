@@ -49,7 +49,7 @@ interface Booking {
   date: string;
   groupSize: number;
   totalPrice: number;
-  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
   createdAt: string;
   updatedAt: string;
 }
@@ -121,17 +121,17 @@ const PendingRequestPage = () => {
     if (result.isConfirmed) {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/status`,
           {
             method: "PATCH",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
-            credentials: "include",
             body: JSON.stringify({ status: "CONFIRMED" }),
           }
         );
-
+        console.log(response);
         if (!response.ok) {
           throw new Error("Failed to approve booking");
         }
@@ -159,7 +159,7 @@ const PendingRequestPage = () => {
   };
 
   // Handle reject booking
-  const handleRejectBooking = async (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     const result = await Swal.fire({
       title: "Reject Booking Request",
       text: "Are you sure you want to reject this booking?",
@@ -175,14 +175,14 @@ const PendingRequestPage = () => {
     if (result.isConfirmed) {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/status`,
           {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
             credentials: "include",
-            body: JSON.stringify({ status: "REJECTED" }),
+            body: JSON.stringify({ status: "CANCELLED" }),
           }
         );
 
@@ -434,7 +434,7 @@ const PendingRequestPage = () => {
                       </button>
 
                       <button
-                        onClick={() => handleRejectBooking(booking._id)}
+                        onClick={() => handleCancelBooking(booking._id)}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       >
                         <XCircle className="w-5 h-5" />
