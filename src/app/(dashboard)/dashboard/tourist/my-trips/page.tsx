@@ -1,4 +1,3 @@
-// app/dashboard/my-trips/page.tsx - Updated with Pay Now button
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -18,9 +17,12 @@ import {
   Loader2,
   RefreshCw,
   CreditCard,
+  MessageSquare,
+  ThumbsUp,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import ReviewDialog from "@/components/modules/Tourist/ReviewDialog";
 
 interface Guide {
   _id: string;
@@ -46,9 +48,16 @@ interface Booking {
   date: string;
   groupSize: number;
   totalPrice: number;
-  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED"; // Added COMPLETED
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
   createdAt: string;
   updatedAt: string;
+  // Add these fields if your API returns them
+  hasReview?: boolean;
+  review?: {
+    _id: string;
+    rating: number;
+    comment: string;
+  };
 }
 
 const MyTripsPage = () => {
@@ -59,7 +68,12 @@ const MyTripsPage = () => {
   const [guides, setGuides] = useState<Record<string, Guide>>({});
   const [processingPayment, setProcessingPayment] = useState<string | null>(
     null
-  ); // Track which booking is being paid
+  );
+
+  // Review dialog state
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedBookingForReview, setSelectedBookingForReview] =
+    useState<Booking | null>(null);
 
   // Fetch all bookings for the tourist
   const fetchMyTrips = async () => {
@@ -177,6 +191,27 @@ const MyTripsPage = () => {
     }
   };
 
+  // Handle Review button click
+  const handleReviewClick = (booking: Booking) => {
+    setSelectedBookingForReview(booking);
+    setReviewDialogOpen(true);
+  };
+
+  // Handle review submission success
+  const handleReviewSubmitted = () => {
+    // Refresh bookings to update review status
+    fetchMyTrips();
+
+    toast.success("Review submitted!", {
+      description: "Thank you for sharing your experience.",
+    });
+  };
+
+  // Check if a booking has a review
+  const hasReview = (booking: Booking) => {
+    return booking.hasReview || booking.review?._id;
+  };
+
   useEffect(() => {
     fetchMyTrips();
   }, []);
@@ -236,7 +271,7 @@ const MyTripsPage = () => {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // Calculate statistics - Updated to include COMPLETED
+  // Calculate statistics
   const stats = {
     total: bookings.length,
     upcoming: bookings.filter((b) => {
@@ -246,8 +281,10 @@ const MyTripsPage = () => {
     }).length,
     pending: bookings.filter((b) => b.status === "PENDING").length,
     confirmed: bookings.filter((b) => b.status === "CONFIRMED").length,
-    completed: bookings.filter((b) => b.status === "COMPLETED").length, // Added
+    completed: bookings.filter((b) => b.status === "COMPLETED").length,
     cancelled: bookings.filter((b) => b.status === "CANCELLED").length,
+    reviewed: bookings.filter((b) => b.status === "COMPLETED" && hasReview(b))
+      .length,
     totalSpent: bookings
       .filter((b) => b.status !== "CANCELLED")
       .reduce(
@@ -324,6 +361,19 @@ const MyTripsPage = () => {
 
   return (
     <div className="p-6">
+      {/* Review Dialog */}
+      {selectedBookingForReview && (
+        <ReviewDialog
+          open={reviewDialogOpen}
+          onOpenChange={setReviewDialogOpen}
+          bookingId={selectedBookingForReview._id}
+          listingId={selectedBookingForReview.listing._id}
+          listingTitle={selectedBookingForReview.listing.title}
+          guideName={getGuideName(selectedBookingForReview.listing)}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -342,8 +392,8 @@ const MyTripsPage = () => {
           </button>
         </div>
 
-        {/* Stats Cards - Updated with COMPLETED */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        {/* Stats Cards - Updated with REVIEWED */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
@@ -400,6 +450,20 @@ const MyTripsPage = () => {
             </div>
           </div>
 
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-700 font-medium">Reviewed</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.reviewed}
+                </p>
+              </div>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Star className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
           <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
             <div className="flex items-center justify-between">
               <div>
@@ -414,18 +478,18 @@ const MyTripsPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+          <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-purple-700 font-medium">
+                <p className="text-sm text-indigo-700 font-medium">
                   Total Spent
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
                   ${stats.totalSpent}
                 </p>
               </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-indigo-600" />
               </div>
             </div>
           </div>
@@ -505,7 +569,16 @@ const MyTripsPage = () => {
                             </span>
                           </div>
                         </div>
-                        <StatusBadge status={booking.status} />
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={booking.status} />
+                          {booking.status === "COMPLETED" &&
+                            hasReview(booking) && (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                <Star className="w-3 h-3" />
+                                Reviewed
+                              </span>
+                            )}
+                        </div>
                       </div>
 
                       {/* Details Grid */}
@@ -596,6 +669,43 @@ const MyTripsPage = () => {
                           </button>
                         )}
 
+                        {/* Review button for COMPLETED bookings without review */}
+                        {booking.status === "COMPLETED" &&
+                          !hasReview(booking) && (
+                            <button
+                              onClick={() => handleReviewClick(booking)}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                              <Star className="w-4 h-4" />
+                              Write a Review
+                            </button>
+                          )}
+
+                        {/* Reviewed badge for COMPLETED bookings with review */}
+                        {booking.status === "COMPLETED" &&
+                          hasReview(booking) && (
+                            <div className="w-full px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <ThumbsUp className="w-4 h-4" />
+                                <span className="font-medium">Reviewed</span>
+                              </div>
+                              {booking.review?.rating && (
+                                <div className="flex items-center justify-center gap-1 mt-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${
+                                        i < booking.review!.rating
+                                          ? "text-yellow-500 fill-current"
+                                          : "text-purple-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                         {/* Manage Booking button for PENDING bookings */}
                         {booking.status === "PENDING" && (
                           <button
@@ -607,19 +717,6 @@ const MyTripsPage = () => {
                             className="w-full px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg hover:bg-yellow-50 transition-colors text-sm"
                           >
                             Awaiting Guide Approval
-                          </button>
-                        )}
-
-                        {/* View Details for COMPLETED bookings */}
-                        {booking.status === "COMPLETED" && (
-                          <button
-                            onClick={() => {
-                              // Add review or view details
-                              toast.success("Tour completed!");
-                            }}
-                            className="w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm"
-                          >
-                            Tour Completed
                           </button>
                         )}
 
@@ -657,6 +754,40 @@ const MyTripsPage = () => {
             <ExternalLink className="w-5 h-5" />
             Explore Tours
           </Link>
+        </div>
+      )}
+
+      {/* Info Box for Reviews */}
+      {stats.completed > 0 && stats.reviewed < stats.completed && (
+        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <MessageSquare className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <h4 className="font-medium text-yellow-900 mb-2">
+                Share Your Experience
+              </h4>
+              <p className="text-sm text-yellow-800 mb-3">
+                You have {stats.completed - stats.reviewed} completed tour(s)
+                waiting for your review. Your feedback helps guides improve and
+                assists other travelers in making decisions.
+              </p>
+              <button
+                onClick={() => {
+                  const firstUnreviewed = sortedBookings.find(
+                    (b) => b.status === "COMPLETED" && !hasReview(b)
+                  );
+                  if (firstUnreviewed) {
+                    handleReviewClick(firstUnreviewed);
+                  }
+                }}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
+              >
+                Write a Review Now
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

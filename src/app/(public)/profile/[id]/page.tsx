@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { EditUserDialog } from "@/components/modules/Admin/User/EditUserDialogue";
 
 interface UserProfile {
   _id: string;
@@ -60,21 +61,23 @@ interface Listing {
   maxGroupSize: number;
 }
 
+// Update your Review interface to match what backend returns
 interface Review {
   _id: string;
   rating: number;
   comment: string;
   createdAt: string;
-  // For guide reviews
+  // For guide reviews (reviews about guide)
   user?: {
     name: string;
     profilePicture?: string;
   };
-  // For tourist reviews
+  // For tourist reviews (reviews written by tourist)
   guide?: {
     name: string;
     profilePicture?: string;
   };
+  listingTitle?: string; // Optional for context
 }
 
 interface ProfileData {
@@ -97,60 +100,61 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("about");
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
+      // CORRECTED: Fetch from the right endpoint
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile-details/${userId}`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch profile");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      console.log("Profile data:", data);
+
+      // Check if data structure matches your API response
+      if (data.data) {
+        setProfileData(data.data);
+      } else {
+        // Fallback if API returns different structure
+        setProfileData(data);
+      }
+
+      // Check if this is the logged-in user's own profile
       try {
-        setLoading(true);
-
-        // CORRECTED: Fetch from the right endpoint
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile-details/${userId}`,
-          {
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+        const authResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
+          { credentials: "include" }
         );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          console.log(authData);
+          setIsOwnProfile(authData.data?._id === userId);
+          console.log(authData?.data?._id);
+          console.log("isOwnProfile:", authData.data?._id === userId);
         }
-
-        const data = await response.json();
-        console.log(data);
-        console.log("Profile data:", data);
-
-        // Check if data structure matches your API response
-        if (data.data) {
-          setProfileData(data.data);
-        } else {
-          // Fallback if API returns different structure
-          setProfileData(data);
-        }
-
-        // Check if this is the logged-in user's own profile
-        try {
-          const authResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`,
-            { credentials: "include" }
-          );
-
-          if (authResponse.ok) {
-            const authData = await authResponse.json();
-            setIsOwnProfile(authData.data?._id === userId);
-          }
-        } catch (authError) {
-          console.log("Could not fetch auth data, continuing...");
-        }
-      } catch (error) {
-        console.error("Error fetching profile data:", error);
-      } finally {
-        setLoading(false);
+      } catch (authError) {
+        console.log("Could not fetch auth data, continuing...");
       }
-    };
-
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     if (userId) {
       fetchProfileData();
     }
@@ -185,6 +189,7 @@ const ProfilePage = () => {
   }
 
   const { user, listings = [], reviews = [] } = profileData;
+  console.log(profileData);
   const isGuide = user.role === "GUIDE";
   const isTourist = user.role === "TOURIST";
   const memberSince = new Date(user.createdAt).getFullYear();
@@ -283,16 +288,13 @@ const ProfilePage = () => {
 
                     <div className="flex gap-3">
                       {isOwnProfile ? (
-                        <Link
-                          href="/dashboard/profile/edit"
-                          className="px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit Profile
-                        </Link>
+                        <EditUserDialog
+                          userId={user._id}
+                          onSuccess={fetchProfileData}
+                        />
                       ) : (
                         <>
-                          {isGuide && (
+                          {!isGuide && (
                             <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
                               <MessageSquare className="w-4 h-4" />
                               Book a Tour
@@ -626,39 +628,6 @@ const ProfilePage = () => {
                   )}
                 </div>
               </div>
-
-              {/* Quick Actions */}
-              {isOwnProfile && (
-                <div className="bg-white rounded-xl shadow p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">
-                    Quick Actions
-                  </h3>
-                  <div className="space-y-3">
-                    <Link
-                      href="/dashboard/profile/edit"
-                      className="block px-4 py-3 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-center"
-                    >
-                      Edit Profile
-                    </Link>
-                    {isGuide && (
-                      <Link
-                        href="/dashboard/listings/create"
-                        className="block px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center"
-                      >
-                        Create New Tour
-                      </Link>
-                    )}
-                    {isTourist && (
-                      <Link
-                        href="/explore"
-                        className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
-                      >
-                        Explore Tours
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -764,6 +733,7 @@ const ProfilePage = () => {
         )}
 
         {/* Reviews Tab - Different for Guide vs Tourist */}
+        {/* Reviews Tab - Different for Guide vs Tourist */}
         {activeTab === "reviews" && (
           <div className="bg-white rounded-xl shadow">
             <div className="p-6 border-b border-gray-200">
@@ -774,19 +744,21 @@ const ProfilePage = () => {
                     {isGuide ? "Reviews & Ratings" : "Reviews Written"}
                   </h2>
                   <div className="flex items-center gap-2">
-                    {isGuide && stats.averageRating ? (
+                    {stats.averageRating > 0 ? (
                       <>
                         <span className="text-2xl font-bold text-gray-900">
                           {stats.averageRating.toFixed(1)}
                         </span>
                         <span className="text-gray-600">
-                          ({reviews.length} reviews)
+                          ({reviews.length} review
+                          {reviews.length !== 1 ? "s" : ""})
                         </span>
                       </>
                     ) : (
                       <span className="text-gray-600">
                         {reviews.length}{" "}
-                        {reviews.length === 1 ? "review" : "reviews"} written
+                        {reviews.length === 1 ? "review" : "reviews"}{" "}
+                        {isGuide ? "received" : "written"}
                       </span>
                     )}
                   </div>
@@ -796,50 +768,62 @@ const ProfilePage = () => {
 
             {reviews.length > 0 ? (
               <div className="divide-y divide-gray-200">
-                {reviews.map((review) => (
-                  <div key={review._id} className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-                          isGuide
-                            ? "bg-gradient-to-r from-green-400 to-emerald-500"
-                            : "bg-gradient-to-r from-blue-400 to-purple-500"
-                        }`}
-                      >
-                        {isGuide
-                          ? review.user?.name?.charAt(0) || "T"
-                          : review.guide?.name?.charAt(0) || "G"}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <h4 className="font-bold text-gray-900">
-                              {isGuide
-                                ? review.user?.name || "Traveler"
-                                : review.guide?.name || "Guide"}
-                            </h4>
-                            <div className="flex items-center gap-1">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < review.rating
-                                      ? "text-yellow-500 fill-current"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </span>
+                {reviews.map((review) => {
+                  // ALWAYS show the tourist who wrote the review
+                  const reviewerName = review.user?.name || "Traveler";
+                  const reviewerInitial =
+                    reviewerName?.charAt(0)?.toUpperCase() || "T";
+
+                  // Context: Who was reviewed (for guide profiles)
+                  const reviewedGuideName = review.guide?.name || "Guide";
+
+                  return (
+                    <div key={review._id} className="p-6">
+                      <div className="flex items-start gap-4 mb-4">
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                            isGuide
+                              ? "bg-gradient-to-r from-green-400 to-emerald-500"
+                              : "bg-gradient-to-r from-blue-400 to-purple-500"
+                          }`}
+                        >
+                          {reviewerInitial}
                         </div>
-                        <p className="text-gray-700">{review.comment}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <h4 className="font-bold text-gray-900">
+                                {reviewerName}
+                              </h4>
+                              {/* Show context */}
+                              <p className="text-sm text-gray-600 mt-1">
+                                {isGuide
+                                  ? "Review for this guide"
+                                  : `Review for ${reviewedGuideName}`}
+                              </p>
+                              <div className="flex items-center gap-1 mt-2">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < review.rating
+                                        ? "text-yellow-500 fill-current"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 mt-3">{review.comment}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-12 text-center">

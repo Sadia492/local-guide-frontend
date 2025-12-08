@@ -89,6 +89,16 @@ interface UserBooking {
   totalPrice: number;
   createdAt: string;
 }
+interface ListingReview {
+  _id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  user: {
+    name: string;
+    profilePicture?: string;
+  };
+}
 
 const ListingDetails = () => {
   const params = useParams();
@@ -113,7 +123,43 @@ const ListingDetails = () => {
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [wishlistData, setWishlistData] = useState<any[]>([]);
+  // Add to your component state
+  const [listingReviews, setListingReviews] = useState<ListingReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
+  // Add fetch function
+  const fetchListingReviews = async () => {
+    if (!listing) return;
+
+    try {
+      setReviewsLoading(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/review/listing/${listing._id}`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setListingReviews(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  // Call in useEffect when listing is loaded
+  useEffect(() => {
+    if (listing) {
+      fetchListingReviews();
+    }
+  }, [listing]);
   // Check if tour is in user's wishlist
   const checkWishlistStatus = async () => {
     if (!user || !listing) return;
@@ -1053,6 +1099,171 @@ const ListingDetails = () => {
                   </p>
                 </div>
               </div>
+            </div>
+            {/* Reviews Section - Add this after the Itinerary section */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border mt-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                Traveler Reviews
+                {listingReviews.length > 0 && (
+                  <span className="ml-2 text-gray-600">
+                    ({listingReviews.length} review
+                    {listingReviews.length !== 1 ? "s" : ""})
+                  </span>
+                )}
+              </h3>
+
+              {reviewsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : listingReviews.length > 0 ? (
+                <div>
+                  {/* Average Rating Summary */}
+                  <div className="mb-8">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-5xl font-bold text-gray-900">
+                          {(
+                            listingReviews.reduce(
+                              (sum, review) => sum + review.rating,
+                              0
+                            ) / listingReviews.length
+                          ).toFixed(1)}
+                        </div>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-5 h-5 ${
+                                i <
+                                Math.round(
+                                  listingReviews.reduce(
+                                    (sum, review) => sum + review.rating,
+                                    0
+                                  ) / listingReviews.length
+                                )
+                                  ? "text-yellow-500 fill-current"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">
+                          {listingReviews.length} review
+                          {listingReviews.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        {/* Rating Distribution */}
+                        {[5, 4, 3, 2, 1].map((star) => {
+                          const count = listingReviews.filter(
+                            (r) => r.rating === star
+                          ).length;
+                          const percentage =
+                            (count / listingReviews.length) * 100;
+
+                          return (
+                            <div
+                              key={star}
+                              className="flex items-center gap-2 mb-2"
+                            >
+                              <div className="flex items-center gap-1 w-16">
+                                <span className="text-sm text-gray-600">
+                                  {star}
+                                </span>
+                                <Star className="w-4 h-4 text-yellow-500" />
+                              </div>
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-yellow-500 h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-600 w-10 text-right">
+                                {count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reviews List */}
+                  <div className="space-y-6">
+                    {(showAllReviews
+                      ? listingReviews
+                      : listingReviews.slice(0, 3)
+                    ).map((review) => (
+                      <div
+                        key={review._id}
+                        className="border-b pb-6 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                              {review.user.name?.charAt(0) || "T"}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">
+                                {review.user.name}
+                              </h4>
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < review.rating
+                                        ? "text-yellow-500 fill-current"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {new Date(review.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )}
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Show More/Less Button */}
+                  {listingReviews.length > 3 && (
+                    <div className="mt-6 text-center">
+                      <button
+                        onClick={() => setShowAllReviews(!showAllReviews)}
+                        className="px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                      >
+                        {showAllReviews
+                          ? "Show Less Reviews"
+                          : `Show All ${listingReviews.length} Reviews`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Star className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    No Reviews Yet
+                  </h4>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    Be the first to review this tour after your experience!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
