@@ -1,3 +1,5 @@
+"use client"; // ADD THIS!
+
 import { cache } from "react";
 
 export interface UserData {
@@ -17,45 +19,39 @@ export interface UserData {
   updatedAt: string;
 }
 
-// Cache for users - ACCEPT COOKIES PARAMETER
-export const getUsers = cache(
-  async (cookieHeader?: string): Promise<UserData[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
+// Client-side ONLY function - works in browser with cookies
+export const getUsers = cache(async (): Promise<UserData[]> => {
+  try {
+    console.log("🔄 Client-side getUsers called");
 
-      // ADD COOKIES TO HEADERS IF PROVIDED
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/user/all`,
+      {
+        credentials: "include", // Browser sends cookies automatically
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
       }
+    );
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/user/all`,
-        {
-          headers,
-          // Use 'omit' when manually setting cookies
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["users"],
-          },
-        }
-      );
+    console.log("📡 Response status:", response.status);
 
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching users:", error);
+    if (!response.ok) {
+      console.error("❌ Failed to fetch users:", response.status);
       return [];
     }
-  }
-);
 
-// Service functions for mutations - EXACT SAME PATTERN
+    const data = await response.json();
+    console.log("✅ Users fetched:", data.data?.length || 0);
+    return data.data || [];
+  } catch (error) {
+    console.error("💥 Error in getUsers:", error);
+    return [];
+  }
+});
+
+// Keep other functions as they are (they already use credentials: "include")
 export const userService = {
   // Update user status
   async updateStatus(id: string, isActive: boolean): Promise<void> {
