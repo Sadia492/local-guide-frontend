@@ -1,35 +1,27 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import Link from "next/link";
 import {
   Search,
-  Eye,
-  Trash2,
-  Edit,
   User,
   Shield,
   Globe,
   Briefcase,
   Mail,
-  Calendar,
   CheckCircle,
   XCircle,
   UserCheck,
   UserX,
   RefreshCw,
-  Loader2,
-  Crown,
-  MapPin,
+  Trash2,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { EditUserDialog } from "@/components/modules/Admin/User/EditUserDialogue";
-import { useUserActions } from "@/actions/userActions";
 import { getInitials, getAvatarColor, formatDate } from "@/lib/userUtils";
 import debounce from "lodash/debounce";
-import { UserData } from "@/services/user/adminUser.service";
+import { UserData, userService } from "@/services/user/adminUser.service";
 
 interface UserManagementClientProps {
   users: UserData[];
@@ -100,7 +92,7 @@ const StatusBadge = ({ isActive }: { isActive: boolean }) => {
 };
 
 export default function UserManagementClient({
-  users,
+  users: initialUsers,
   filteredUsers: serverFilteredUsers,
   totalUsers,
   tourists,
@@ -112,13 +104,21 @@ export default function UserManagementClient({
   initialCurrentPage,
 }: UserManagementClientProps) {
   const router = useRouter();
-  const { deleteUser, toggleUserStatus, changeUserRole } = useUserActions();
+
+  // Local state for users - so we can update without reloading page
+  const [users, setUsers] = useState<UserData[]>(initialUsers);
 
   // Local state for filters
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [roleFilter, setRoleFilter] = useState(initialRoleFilter);
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [currentPage, setCurrentPage] = useState(initialCurrentPage);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Update users when initialUsers prop changes
+  useEffect(() => {
+    setUsers(initialUsers);
+  }, [initialUsers]);
 
   // Debounced function to update URL
   const updateURL = useCallback(
@@ -145,6 +145,20 @@ export default function UserManagementClient({
     });
     setCurrentPage(1); // Reset to first page when filters change
   }, [searchTerm, roleFilter, statusFilter, updateURL]);
+
+  // Refresh users function
+  const refreshUsers = async () => {
+    try {
+      setIsLoading(true);
+      // Simulate a delay for better UX
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      router.refresh(); // This will trigger parent to refetch
+    } catch (error) {
+      console.error("Error refreshing users:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Client-side filtering for instant feedback
   const locallyFilteredUsers = useMemo(() => {
@@ -176,6 +190,20 @@ export default function UserManagementClient({
   );
   const totalPages = Math.ceil(displayUsers.length / ITEMS_PER_PAGE);
 
+  // Update user in state
+  const updateUserInState = (userId: string, updates: Partial<UserData>) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        user._id === userId ? { ...user, ...updates } : user
+      )
+    );
+  };
+
+  // Remove user from state
+  const removeUserFromState = (userId: string) => {
+    setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
+  };
+
   // Handlers
   const handleDelete = async (id: string, name: string) => {
     const result = await Swal.fire({
@@ -204,9 +232,12 @@ export default function UserManagementClient({
     });
 
     if (result.isConfirmed) {
-      const success = await deleteUser(id, name);
-      if (success) {
-        router.refresh();
+      try {
+        await userService.deleteUser(id);
+        removeUserFromState(id);
+        toast.success(`${name} has been deleted successfully`);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to delete user");
       }
     }
   };
@@ -255,9 +286,14 @@ export default function UserManagementClient({
     });
 
     if (result.isConfirmed) {
-      const success = await toggleUserStatus(id, currentStatus, name);
-      if (success) {
-        router.refresh();
+      try {
+        await userService.updateStatus(id, !currentStatus);
+        updateUserInState(id, { isActive: !currentStatus });
+        toast.success(
+          `${name} has been ${currentStatus ? "deactivated" : "activated"}`
+        );
+      } catch (error: any) {
+        toast.error(error.message || "Failed to update user status");
       }
     }
   };
@@ -302,11 +338,20 @@ export default function UserManagementClient({
     });
 
     if (result.isConfirmed) {
-      const success = await changeUserRole(id, currentRole, name);
-      if (success) {
-        router.refresh();
+      try {
+        await userService.updateRole(id, newRole as any);
+        updateUserInState(id, { role: newRole as any });
+        toast.success(`${name}'s role has been changed to ${newRole}`);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to update user role");
       }
     }
+  };
+
+  // Handle successful user edit
+  const handleUserEditSuccess = (updatedUser: UserData) => {
+    updateUserInState(updatedUser._id, updatedUser);
+    toast.success(`${updatedUser.name} has been updated successfully`);
   };
 
   return (
@@ -323,11 +368,21 @@ export default function UserManagementClient({
             </p>
           </div>
           <button
-            onClick={() => router.refresh()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            onClick={refreshUsers}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Refreshing...
+              </span>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -551,10 +606,7 @@ export default function UserManagementClient({
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-2 border-t">
                           {/* Edit User Dialog */}
-                          <EditUserDialog
-                            userId={user._id}
-                            onSuccess={() => router.refresh()}
-                          />
+                          <EditUserDialog userId={user._id} />
 
                           <button
                             onClick={() => handleDelete(user._id, user.name)}
