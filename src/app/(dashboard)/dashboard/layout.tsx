@@ -1,4 +1,3 @@
-// app/(dashboard)/dashboard/layout.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,6 +14,7 @@ interface User {
 export default function DashboardLayout({ children }: React.PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -22,63 +22,69 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
+        setError(null);
+
+        console.log(
+          "Checking auth at:",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`
+        );
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
           {
             method: "GET",
-            credentials: "include",
+            credentials: "include", // Important for cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setUser(data.data);
+        console.log("Auth response status:", response.status);
+        console.log(
+          "Auth response headers:",
+          Object.fromEntries(response.headers.entries())
+        );
 
-            // Check if user has access to the current dashboard route
-            const currentRole = data.data.role; // "TOURIST", "GUIDE", or "ADMIN"
-            const currentPath = pathname; // e.g., "/dashboard/guide"
+        const data = await response.json();
+        console.log("Auth response data:", data);
 
-            // Define which roles can access which dashboard sections
-            if (
-              currentPath.startsWith("/dashboard/tourist") &&
-              currentRole !== "TOURIST"
-            ) {
-              // Redirect to appropriate dashboard
-              if (currentRole === "GUIDE") router.push("/dashboard/guide");
-              else if (currentRole === "ADMIN") router.push("/dashboard/admin");
-              else router.push("/dashboard/tourist");
-              return;
-            }
+        if (response.ok && data.success) {
+          setUser(data.data);
 
-            if (
-              currentPath.startsWith("/dashboard/guide") &&
-              currentRole !== "GUIDE"
-            ) {
-              if (currentRole === "TOURIST") router.push("/dashboard/tourist");
-              else if (currentRole === "ADMIN") router.push("/dashboard/admin");
-              else router.push("/dashboard/guide");
-              return;
-            }
+          // Check role-based routing
+          const currentRole = data.data.role;
+          const currentPath = pathname;
 
-            if (
-              currentPath.startsWith("/dashboard/admin") &&
-              currentRole !== "ADMIN"
-            ) {
-              if (currentRole === "TOURIST") router.push("/dashboard/tourist");
-              else if (currentRole === "GUIDE") router.push("/dashboard/guide");
-              else router.push("/");
-              return;
-            }
-          } else {
-            router.push("/login");
+          // Redirect based on role
+          if (
+            currentRole === "TOURIST" &&
+            !currentPath.startsWith("/dashboard/tourist")
+          ) {
+            router.replace("/dashboard/tourist/wishlist");
+          } else if (
+            currentRole === "GUIDE" &&
+            !currentPath.startsWith("/dashboard/guide")
+          ) {
+            router.replace("/dashboard/guide/my-listings");
+          } else if (
+            currentRole === "ADMIN" &&
+            !currentPath.startsWith("/dashboard/admin")
+          ) {
+            router.replace("/dashboard/admin/users");
           }
         } else {
-          router.push("/login");
+          console.log("Auth failed, redirecting to login");
+          window.location.href = `/login?redirect=${encodeURIComponent(
+            pathname
+          )}`;
         }
       } catch (error) {
-        router.push("/login");
+        console.error("Auth check error:", error);
+        setError(error instanceof Error ? error.message : "Unknown error");
+        window.location.href = `/login?redirect=${encodeURIComponent(
+          pathname
+        )}`;
       } finally {
         setIsLoading(false);
       }
@@ -87,7 +93,25 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
     checkAuth();
   }, [router, pathname]);
 
-  // Show loading state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold text-red-600 mb-2">
+            Authentication Error
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -99,37 +123,17 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
     );
   }
 
-  // If no user (should have redirected by now), show nothing
   if (!user) {
     return null;
   }
 
-  // User is authenticated and has correct role, show the dashboard
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Fixed but responsive */}
       <div className="fixed inset-y-0 left-0 z-40">
         <Sidebar />
       </div>
-
-      {/* Main Content - Responsive spacing */}
       <div className="flex-1 w-full lg:ml-64 lg:w-auto transition-all duration-300">
-        <div className="min-h-screen overflow-auto p-6">
-          {/* Welcome message */}
-          {/* <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {user.name}!
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {user.role === "TOURIST" && "Manage your trips and bookings"}
-              {user.role === "GUIDE" && "Manage your tours and bookings"}
-              {user.role === "ADMIN" && "Manage platform users and content"}
-            </p>
-          </div> */}
-
-          {/* Dashboard content */}
-          {children}
-        </div>
+        <div className="min-h-screen overflow-auto p-6">{children}</div>
       </div>
     </div>
   );

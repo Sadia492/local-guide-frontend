@@ -1,23 +1,34 @@
-// src/proxy.ts
+// src/middleware.ts (or proxy.ts)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
+  // Only do basic protection, let DashboardLayout handle the rest
   const { pathname } = request.nextUrl;
 
-  // Protect dashboard routes AND profile routes
-  const protectedRoutes = ["/dashboard", "/profile"];
+  // List of public routes
+  const publicRoutes = [
+    "/",
+    "/explore",
+    "/tours",
+    "/login",
+    "/register",
+    "/api",
+  ];
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  if (isProtectedRoute) {
-    // Get auth token from cookies
-    const accessToken = request.cookies.get("accessToken")?.value;
+  // If it's a dashboard route, let it through - DashboardLayout will handle auth
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/profile")) {
+    return NextResponse.next();
+  }
 
-    // If no token, redirect to login
-    if (!accessToken) {
+  // For all other non-public routes, redirect to login if no token
+  if (!isPublicRoute) {
+    const token = request.cookies.get("accessToken")?.value;
+    if (!token) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -28,5 +39,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/profile/:path*"],
+  matcher: [
+    // Don't match dashboard routes
+    "/((?!dashboard|profile).*)",
+  ],
 };
