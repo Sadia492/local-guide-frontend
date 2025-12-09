@@ -1,3 +1,4 @@
+// actions/userActions.ts
 "use client";
 
 import { userService } from "@/services/user/adminUser.service";
@@ -7,7 +8,7 @@ export const useUserActions = () => {
   const deleteUser = async (id: string, name?: string) => {
     try {
       await userService.deleteUser(id);
-      await userService.revalidateCache();
+      // REMOVED: await userService.revalidateCache();
 
       toast.success("User deleted successfully", {
         description: `${
@@ -31,7 +32,7 @@ export const useUserActions = () => {
   ) => {
     try {
       await userService.updateStatus(id, !currentStatus);
-      await userService.revalidateCache();
+      // REMOVED: await userService.revalidateCache();
 
       const actionText = currentStatus ? "deactivated" : "activated";
       toast.success(`User ${actionText}`, {
@@ -56,7 +57,7 @@ export const useUserActions = () => {
     try {
       const newRole = currentRole === "TOURIST" ? "GUIDE" : "TOURIST";
       await userService.updateRole(id, newRole);
-      await userService.revalidateCache();
+      // REMOVED: await userService.revalidateCache();
 
       const actionText =
         currentRole === "TOURIST" ? "promoted to Guide" : "demoted to Tourist";
