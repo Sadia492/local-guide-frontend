@@ -1,8 +1,9 @@
+"use client";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/services/auth/auth.service";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import LoginForm from "@/components/modules/Auth/LoginForm";
+import { useAuth } from "@/actions/useAuth";
 
 export const metadata = {
   title: "Login | LocalGuide",
@@ -19,9 +20,10 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const redirectTo = params.redirect || "/";
+  const { user } = useAuth();
 
   // Check if user is already logged in (server-side)
-  const currentUser = await getCurrentUser();
+  const currentUser = user;
   console.log(currentUser);
 
   if (currentUser) {
