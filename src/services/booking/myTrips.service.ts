@@ -1,5 +1,4 @@
-import { cache } from "react";
-
+// services/booking/myTrips.service.ts
 export interface Guide {
   _id: string;
   name: string;
@@ -37,64 +36,53 @@ export interface Booking {
   review?: BookingReview;
 }
 
-// Cache for tourist's bookings
-export const getMyTrips = cache(
-  async (cookieHeader?: string): Promise<Booking[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/my-bookings`,
-        {
-          headers,
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["my-trips"],
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching trips:", error);
-      return [];
-    }
-  }
-);
-
-// Get guide details
-export const getGuideDetails = async (
-  guideId: string
-): Promise<Guide | null> => {
+// CLIENT-SIDE function (no cookies needed)
+export const getMyTrips = async (): Promise<Booking[]> => {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/user/profile-details/${guideId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/my-bookings`,
       {
-        credentials: "include",
+        credentials: "include", // This will automatically send cookies
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
     );
 
     if (!response.ok) {
-      return null;
+      console.error("Failed to fetch trips:", response.status);
+      return [];
     }
 
     const data = await response.json();
-    return data.data?.user || null;
+    return data.data || [];
   } catch (error) {
-    console.error(`Error fetching guide ${guideId}:`, error);
-    return null;
+    console.error("Error fetching trips:", error);
+    return [];
   }
+};
+
+// Get trip stats
+export const getTripStats = (trips: Booking[]) => {
+  const totalTrips = trips.length;
+  const totalSpent = trips.reduce((sum, trip) => sum + trip.totalPrice, 0);
+  const upcomingTrips = trips.filter((trip) =>
+    ["PENDING", "CONFIRMED"].includes(trip.status)
+  ).length;
+  const completedTrips = trips.filter(
+    (trip) => trip.status === "COMPLETED"
+  ).length;
+  const cancelledTrips = trips.filter(
+    (trip) => trip.status === "CANCELLED"
+  ).length;
+
+  return {
+    totalTrips,
+    totalSpent,
+    upcomingTrips,
+    completedTrips,
+    cancelledTrips,
+  };
 };
 
 // Service functions for mutations
@@ -118,14 +106,47 @@ export const tripService = {
     return data.data;
   },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
-    try {
-      await fetch("/api/revalidate?tag=my-trips", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to revalidate cache:", error);
+  // Cancel booking
+  async cancelBooking(bookingId: string): Promise<{ success: boolean }> {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/cancel`,
+      {
+        method: "PATCH",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to cancel booking");
     }
+
+    return { success: true };
+  },
+
+  // Request reschedule
+  async rescheduleBooking(
+    bookingId: string,
+    newDate: string,
+    newTime: string
+  ): Promise<{ success: boolean }> {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/reschedule`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ date: newDate, time: newTime }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to reschedule booking");
+    }
+
+    return { success: true };
   },
 };

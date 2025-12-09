@@ -145,6 +145,7 @@ export default function WishlistClient({
   const refreshData = async () => {
     setLoading(true);
     try {
+      // Fallback to local refresh
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/wishlist`,
         {

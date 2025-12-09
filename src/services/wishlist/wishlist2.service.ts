@@ -1,4 +1,5 @@
-import { cache } from "react";
+// services/wishlist/wishlist2.service.ts
+"use client"; // Add this at the top
 
 export interface Guide {
   _id: string;
@@ -30,53 +31,36 @@ export interface WishlistItem {
   addedAt: string;
 }
 
-// Cache for wishlist items
-export const getWishlistItems = cache(
-  async (cookieHeader?: string): Promise<WishlistItem[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
+// SIMPLIFIED - Client-side only fetch
+export const getWishlist = async (): Promise<WishlistItem[]> => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/wishlist`,
+      {
+        credentials: "include",
       }
+    );
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/wishlist`,
-        {
-          headers,
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["wishlist"],
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
+    if (!response.ok) {
+      console.error("Failed to fetch wishlist:", response.status);
       return [];
     }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return [];
   }
-);
+};
 
 // Get wishlist stats
 export const getWishlistStats = (items: WishlistItem[]) => {
   const total = items.length;
-
   const totalValue = items.reduce((sum, item) => sum + item.listing.fee, 0);
-
   const cities = new Set(items.map((item) => item.listing.city));
   const uniqueCities = cities.size;
-
   const newestAdd = items.length > 0 ? new Date(items[0].addedAt) : null;
-
   const averagePrice = total > 0 ? totalValue / total : 0;
 
   return {
@@ -88,7 +72,7 @@ export const getWishlistStats = (items: WishlistItem[]) => {
   };
 };
 
-// Service functions for mutations
+// Service functions for mutations - REMOVE revalidateCache
 export const wishlistService = {
   // Remove item from wishlist
   async removeItem(listingId: string): Promise<{ success: boolean }> {
@@ -126,14 +110,5 @@ export const wishlistService = {
     return { success: true };
   },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
-    try {
-      await fetch("/api/revalidate?tag=wishlist", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to revalidate cache:", error);
-    }
-  },
+  // Remove revalidateCache since we don't need it
 };

@@ -164,7 +164,7 @@ export default function MyTripsClient({
     }
   }, [trips]);
 
-  // Refresh data
+  // Refresh data - make this accessible to child components if needed
   const refreshData = async () => {
     setLoading(true);
     try {
@@ -172,6 +172,10 @@ export default function MyTripsClient({
         `${process.env.NEXT_PUBLIC_API_URL}/api/booking/my-bookings`,
         {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
         }
       );
 
@@ -185,10 +189,11 @@ export default function MyTripsClient({
         setTrips(data.data);
         const newStats = getTripStats(data.data);
         setStats(newStats);
+        toast.success("Trips refreshed successfully");
       }
     } catch (err) {
       console.error("Error fetching trips:", err);
-      toast.error("Failed to load your trips");
+      toast.error("Failed to refresh trips");
     } finally {
       setLoading(false);
     }
