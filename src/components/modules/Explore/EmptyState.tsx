@@ -1,12 +1,21 @@
+"use client";
+
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface EmptyStateProps {
   hasSearch: boolean;
-  onReset: () => void;
 }
 
-export default function EmptyState({ hasSearch, onReset }: EmptyStateProps) {
+export default function EmptyState({ hasSearch }: EmptyStateProps) {
+  const router = useRouter();
+
+  const handleReset = () => {
+    // Clear all filters by navigating to /explore without any query params
+    router.push("/explore", { scroll: false });
+  };
+
   return (
     <div className="text-center py-16">
       <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
@@ -21,7 +30,7 @@ export default function EmptyState({ hasSearch, onReset }: EmptyStateProps) {
       {hasSearch && (
         <Button
           variant="primary"
-          onClick={onReset}
+          onClick={handleReset}
           className="bg-blue-600 hover:bg-blue-700"
         >
           Clear all filters

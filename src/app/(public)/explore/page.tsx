@@ -28,38 +28,37 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   // Process search params
   const params = await searchParams;
   const search = params.search || "";
-  const category = params.category || null;
+  const category = params.category || "";
   const minPrice = params.minPrice ? parseInt(params.minPrice) : 0;
   const maxPrice = params.maxPrice ? parseInt(params.maxPrice) : 1000;
-  const maxDuration = params.maxDuration ? parseInt(params.maxDuration) : null;
+  const maxDuration = params.maxDuration ? parseInt(params.maxDuration) : 0;
+  const sort = params.sort || "relevance";
 
   const filters: FilterState = {
     search,
-    selectedCategory: category,
+    selectedCategory: category || null,
     priceRange: [minPrice, maxPrice],
-    duration: maxDuration,
+    duration: maxDuration || null,
   };
 
-  // Fetch data in parallel - using server-side functions
+  // Fetch data
   const [listings, currentUser] = await Promise.all([
     getListings(),
-    getCurrentUser(), // Server-side auth check
+    getCurrentUser(),
   ]);
 
   const isAuth = !!currentUser;
 
-  // Filter listings based on search params
-  const filteredListings = listings.filter((tour) => {
+  // Apply filters
+  let filteredListings = listings.filter((tour) => {
     const matchesSearch =
       !search ||
-      search === "" ||
       tour.title.toLowerCase().includes(search.toLowerCase()) ||
       tour.city.toLowerCase().includes(search.toLowerCase()) ||
-      (tour.description as string)
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
+      (tour.description || "").toLowerCase().includes(search.toLowerCase()) ||
       tour.category.toLowerCase().includes(search.toLowerCase());
 
+    // Handle category filter - check if category is empty string or null
     const matchesCategory = !category || tour.category === category;
 
     const matchesPrice = tour.fee >= minPrice && tour.fee <= maxPrice;
@@ -67,6 +66,24 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     const matchesDuration = !maxDuration || tour.duration <= maxDuration;
 
     return matchesSearch && matchesCategory && matchesPrice && matchesDuration;
+  });
+
+  // Apply sorting
+  filteredListings.sort((a, b) => {
+    switch (sort) {
+      case "price_low":
+        return a.fee - b.fee;
+      case "price_high":
+        return b.fee - a.fee;
+      case "duration":
+        return a.duration - b.duration;
+      case "newest":
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      default: // relevance or default
+        return 0;
+    }
   });
 
   return (
@@ -108,12 +125,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
                 currentUser={currentUser}
               />
             ) : (
-              <EmptyState
-                hasSearch={!!search || !!category}
-                onReset={() => {
-                  /* Reset handled by client component */
-                }}
-              />
+              <EmptyState hasSearch={!!search || !!category} />
             )}
           </Suspense>
         </div>
