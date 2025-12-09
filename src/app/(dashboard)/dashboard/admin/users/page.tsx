@@ -21,8 +21,6 @@ export default async function UserManagementPage({ searchParams }: any) {
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
 
-  console.log("🍪 Server cookies:", cookieHeader);
-
   // extract safely
   const searchTerm = safeParam(params?.search, "");
   const roleFilter = safeParam(params?.role, "all");

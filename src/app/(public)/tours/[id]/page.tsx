@@ -50,7 +50,6 @@ export default function ListingPage() {
         }
 
         const listingData = await listingResponse.json();
-        console.log("Listing data:", listingData);
 
         if (!listingData.data) {
           throw new Error("Invalid listing data");

@@ -10,7 +10,6 @@ export async function deleteListingAction(id: string): Promise<void> {
     // Revalidate the specific page
     revalidatePath("/dashboard/guide/my-listings");
   } catch (error) {
-    console.error("Error in deleteListingAction:", error);
     throw error;
   }
 }
@@ -24,7 +23,6 @@ export async function updateListingStatusAction(
     // Revalidate the specific page
     revalidatePath("/dashboard/guide/my-listings");
   } catch (error) {
-    console.error("Error in updateListingStatusAction:", error);
     throw error;
   }
 }

@@ -21,15 +21,12 @@ export function ProtectedRoute({
     if (!isLoading) {
       // If not authenticated at all
       if (!isAuthenticated || !user) {
-        console.log("Not authenticated, redirecting to login");
         router.push(`/login?redirect=${window.location.pathname}`);
         return;
       }
 
       // Check if user has required role
       if (!allowedRoles.includes(user.role)) {
-        console.log(`User role ${user.role} not allowed, redirecting`);
-
         // Redirect based on role
         if (user.role === "TOURIST") {
           router.push("/dashboard/tourist/wishlist");

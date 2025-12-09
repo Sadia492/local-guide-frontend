@@ -55,7 +55,6 @@ export const useBooking = (listingId?: string) => {
 
       return result;
     } catch (error) {
-      console.error("Booking error:", error);
       toast.error("Failed to create booking", {
         description:
           error instanceof Error ? error.message : "Please try again later",
@@ -91,7 +90,6 @@ export const useBooking = (listingId?: string) => {
         checkUserBooking();
       }, 500);
     } catch (error) {
-      console.error("Error cancelling booking:", error);
       toast.error("Failed to cancel booking", {
         description:
           error instanceof Error ? error.message : "Please try again later",

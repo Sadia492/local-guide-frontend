@@ -18,7 +18,6 @@ export async function cancelBookingAction(id: string): Promise<void> {
       throw new Error("Failed to cancel booking");
     }
   } catch (error) {
-    console.error("Error in cancelBookingAction:", error);
     throw error;
   }
 }
@@ -41,7 +40,6 @@ export async function confirmBookingAction(id: string): Promise<void> {
       throw new Error("Failed to confirm booking");
     }
   } catch (error) {
-    console.error("Error in confirmBookingAction:", error);
     throw error;
   }
 }
@@ -64,7 +62,6 @@ export async function completeBookingAction(id: string): Promise<void> {
       throw new Error("Failed to complete booking");
     }
   } catch (error) {
-    console.error("Error in completeBookingAction:", error);
     throw error;
   }
 }

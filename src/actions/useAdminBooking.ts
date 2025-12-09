@@ -26,7 +26,6 @@ export const useAdminBookings = () => {
       const data = await fetchAllBookings();
       setBookings(data);
     } catch (error) {
-      console.error("Error fetching bookings:", error);
       toast.error("Failed to load bookings", {
         description:
           error instanceof Error ? error.message : "Please try again later",
@@ -71,7 +70,6 @@ export const useAdminBookings = () => {
         description: `Booking has been ${newStatus.toLowerCase()} successfully`,
       });
     } catch (error: any) {
-      console.error("Error updating booking:", error);
       toast.error("Failed to update booking", {
         description: error.message || "Please try again",
       });

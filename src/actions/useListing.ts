@@ -42,7 +42,6 @@ export const useListing = (id: string) => {
             };
           }
         } catch (guideError) {
-          console.error("Error fetching guide details:", guideError);
           listingData.guide = {
             _id: listingData.guide,
             name: "Local Guide",

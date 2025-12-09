@@ -61,7 +61,6 @@ export const getMyTrips = cache(
       );
 
       if (!response.ok) {
-        console.warn(`My trips fetch returned: ${response.status}`);
         return [];
       }
 

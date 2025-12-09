@@ -11,7 +11,6 @@ export async function removeItemAction(
     revalidateTag("wishlist", "default");
     return result;
   } catch (error) {
-    console.error("Error in removeItemAction:", error);
     throw error;
   }
 }
@@ -22,7 +21,6 @@ export async function clearAllAction(): Promise<{ success: boolean }> {
     revalidateTag("wishlist", "default");
     return result;
   } catch (error) {
-    console.error("Error in clearAllAction:", error);
     throw error;
   }
 }

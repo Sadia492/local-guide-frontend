@@ -114,7 +114,6 @@ const ListingDetails = () => {
         setError(
           err instanceof Error ? err.message : "Failed to fetch listing"
         );
-        console.error("Error fetching listing:", err);
         toast.error("Failed to load listing", {
           description: "Please try again later",
         });

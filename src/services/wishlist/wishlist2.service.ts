@@ -54,7 +54,6 @@ export const getWishlistItems = cache(
       );
 
       if (!response.ok) {
-        console.warn(`Wishlist fetch returned: ${response.status}`);
         return [];
       }
 

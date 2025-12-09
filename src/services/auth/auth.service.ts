@@ -30,11 +30,6 @@ export async function getCurrentUser(): Promise<User | null> {
       .map((cookie) => `${cookie.name}=${cookie.value}`)
       .join("; ");
 
-    console.log(
-      "Sending cookies to /api/user/me:",
-      cookieHeader.substring(0, 100) + "..."
-    );
-
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
       {
@@ -46,11 +41,8 @@ export async function getCurrentUser(): Promise<User | null> {
       }
     );
 
-    console.log("Current user API response status:", response.status);
-
     if (response.ok) {
       const data = await response.json();
-      console.log("Current user data received:", data);
 
       // Handle different response structures
       if (data.data) {
@@ -66,18 +58,14 @@ export async function getCurrentUser(): Promise<User | null> {
 
     // Try alternative: Maybe it needs Authorization header instead
     if (response.status === 401) {
-      console.log("Trying alternative authentication method...");
-
       // Check if there's a token in localStorage (if this were client-side)
       // Since we're server-side, we can only use cookies
 
       return null;
     }
 
-    console.log("Failed to get current user");
     return null;
   } catch (error) {
-    console.error("Error fetching current user:", error);
     return null;
   }
 }
@@ -145,7 +133,6 @@ export async function registerUser(
 
     return result;
   } catch (error) {
-    console.error("Registration service error:", error);
     throw error;
   }
 }

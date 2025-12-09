@@ -18,7 +18,6 @@ export default async function ListingManagementPage({ searchParams }: any) {
   const params = await searchParams;
 
   // DEBUG: Log search params
-  console.log("🔍 Server Component - Search Params:", params);
 
   // extract safely
   const searchTerm = safeParam(params?.search, "");
@@ -32,23 +31,12 @@ export default async function ListingManagementPage({ searchParams }: any) {
   const listings = await getListings();
 
   // DEBUG: Log listings count
-  console.log("📊 Total listings fetched:", listings.length);
 
   const filteredListings = filterListings(listings as any[], {
     searchTerm,
     statusFilter,
     categoryFilter,
     guideFilter,
-  });
-
-  // DEBUG: Log filter results
-  console.log("🎯 Filtered listings count:", filteredListings.length);
-  console.log("🔧 Filters applied:", {
-    searchTerm,
-    statusFilter,
-    categoryFilter,
-    guideFilter,
-    currentPage,
   });
 
   const categories = getUniqueCategories(listings as any[]);

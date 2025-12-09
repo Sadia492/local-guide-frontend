@@ -61,7 +61,6 @@ export const getPendingBookings = cache(
       );
 
       if (!response.ok) {
-        console.warn(`Pending bookings fetch returned: ${response.status}`);
         return [];
       }
 

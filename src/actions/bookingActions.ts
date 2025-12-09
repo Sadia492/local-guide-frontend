@@ -14,7 +14,6 @@ export async function approveBookingAction(id: string): Promise<void> {
 
     await bookingService.updateBookingStatus(id, "CONFIRMED", cookieHeader);
   } catch (error) {
-    console.error("Error in approveBookingAction:", error);
     throw error;
   }
 }
@@ -30,7 +29,6 @@ export async function rejectBookingAction(id: string): Promise<void> {
 
     await bookingService.updateBookingStatus(id, "CANCELLED", cookieHeader);
   } catch (error) {
-    console.error("Error in rejectBookingAction:", error);
     throw error;
   }
 }

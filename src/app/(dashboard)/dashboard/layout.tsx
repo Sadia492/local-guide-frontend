@@ -40,18 +40,11 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
             const currentRole = data.data.role; // "TOURIST", "GUIDE", or "ADMIN"
             const currentPath = pathname; // e.g., "/dashboard/guide"
 
-            console.log(
-              `User role: ${currentRole}, Current path: ${currentPath}`
-            );
-
             // Define which roles can access which dashboard sections
             if (
               currentPath.startsWith("/dashboard/tourist") &&
               currentRole !== "TOURIST"
             ) {
-              console.log(
-                `Tourist trying to access ${currentPath}, redirecting...`
-              );
               // Redirect to appropriate dashboard
               if (currentRole === "GUIDE") router.push("/dashboard/guide");
               else if (currentRole === "ADMIN") router.push("/dashboard/admin");
@@ -63,9 +56,6 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
               currentPath.startsWith("/dashboard/guide") &&
               currentRole !== "GUIDE"
             ) {
-              console.log(
-                `Guide trying to access ${currentPath}, redirecting...`
-              );
               if (currentRole === "TOURIST") router.push("/dashboard/tourist");
               else if (currentRole === "ADMIN") router.push("/dashboard/admin");
               else router.push("/dashboard/guide");
@@ -76,24 +66,18 @@ export default function DashboardLayout({ children }: React.PropsWithChildren) {
               currentPath.startsWith("/dashboard/admin") &&
               currentRole !== "ADMIN"
             ) {
-              console.log(
-                `Admin trying to access ${currentPath}, redirecting...`
-              );
               if (currentRole === "TOURIST") router.push("/dashboard/tourist");
               else if (currentRole === "GUIDE") router.push("/dashboard/guide");
               else router.push("/");
               return;
             }
           } else {
-            console.log("Auth failed, redirecting to login");
             router.push("/login");
           }
         } else {
-          console.log("API call failed, redirecting to login");
           router.push("/login");
         }
       } catch (error) {
-        console.error("Auth check failed:", error);
         router.push("/login");
       } finally {
         setIsLoading(false);

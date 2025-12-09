@@ -189,8 +189,6 @@ function RegisterClient({ initialRole }: RegisterClientProps) {
       formDataObj.append("file", profilePhoto);
     }
 
-    console.log("Registering user with FormData...");
-
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
@@ -203,14 +201,12 @@ function RegisterClient({ initialRole }: RegisterClientProps) {
       );
 
       const data = await res.json();
-      console.log("Registration response:", data);
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Registration failed");
       }
 
       // Registration successful - now handle auto-login
-      console.log("Registration successful!", data);
 
       // Try to auto-login
       try {
@@ -236,7 +232,6 @@ function RegisterClient({ initialRole }: RegisterClientProps) {
           );
         }
       } catch (loginErr) {
-        console.error("Auto-login error:", loginErr);
         // Still redirect to login page if auto-login fails
         router.push(
           `/login?registered=true&email=${encodeURIComponent(formData.email)}`

@@ -27,7 +27,6 @@ export const useWishlist = (listingId?: string) => {
       );
       setIsInWishlist(inWishlist);
     } catch (error) {
-      console.error("Error checking wishlist:", error);
       setIsInWishlist(false);
       setWishlistData([]);
     }
@@ -58,7 +57,6 @@ export const useWishlist = (listingId?: string) => {
         await checkWishlistStatus();
       }
     } catch (error) {
-      console.error("Error adding to wishlist:", error);
       toast.error("Failed to add to wishlist", {
         description:
           error instanceof Error ? error.message : "Please try again",

@@ -24,7 +24,6 @@ export async function createPaymentAction(
 
     return data.data;
   } catch (error) {
-    console.error("Error in createPaymentAction:", error);
     throw error;
   }
 }

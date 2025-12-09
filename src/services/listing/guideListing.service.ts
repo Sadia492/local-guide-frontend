@@ -45,7 +45,6 @@ export const getMyListings = cache(
       );
 
       if (!response.ok) {
-        console.warn(`Listings fetch returned: ${response.status}`);
         return [];
       }
 

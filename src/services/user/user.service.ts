@@ -61,7 +61,6 @@ export interface ProfileData {
 function getApiUrl() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) {
-    console.error("NEXT_PUBLIC_API_URL is not defined");
     throw new Error("API URL is not configured");
   }
   return apiUrl;
@@ -73,9 +72,6 @@ export async function getUserProfile(
 ): Promise<ProfileData> {
   try {
     const apiUrl = getApiUrl();
-    console.log(
-      `Fetching user profile from: ${apiUrl}/api/user/profile-details/${userId}`
-    );
 
     // Prepare headers
     const headers: Record<string, string> = {
@@ -85,7 +81,6 @@ export async function getUserProfile(
     // If we have cookies from the request, pass them
     if (requestCookies) {
       headers.Cookie = requestCookies;
-      console.log("Passing cookies to API request");
     }
 
     const response = await fetch(
@@ -98,13 +93,7 @@ export async function getUserProfile(
       }
     );
 
-    console.log(`Response status: ${response.status}`);
-
     if (!response.ok) {
-      console.error(
-        `Failed to fetch user profile. Status: ${response.status}, StatusText: ${response.statusText}`
-      );
-
       if (response.status === 404) {
         throw new Error("User not found");
       }
@@ -133,7 +122,6 @@ export async function getUserProfile(
     }
 
     const data = await response.json();
-    console.log("Profile data received successfully");
 
     if (!data.data) {
       throw new Error("Invalid response format from API");
@@ -141,8 +129,6 @@ export async function getUserProfile(
 
     return data.data;
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-
     if (error instanceof Error) {
       throw error;
     }
@@ -155,9 +141,6 @@ export async function getUsers(
 ): Promise<ProfileData> {
   try {
     const apiUrl = getApiUrl();
-    console.log(
-      `Fetching user profile from: ${apiUrl}/api/user/profile-details/${userId}`
-    );
 
     // Prepare headers
     const headers: Record<string, string> = {
@@ -167,7 +150,6 @@ export async function getUsers(
     // If we have cookies from the request, pass them
     if (requestCookies) {
       headers.Cookie = requestCookies;
-      console.log("Passing cookies to API request");
     }
 
     const response = await fetch(
@@ -180,13 +162,7 @@ export async function getUsers(
       }
     );
 
-    console.log(`Response status: ${response.status}`);
-
     if (!response.ok) {
-      console.error(
-        `Failed to fetch user profile. Status: ${response.status}, StatusText: ${response.statusText}`
-      );
-
       if (response.status === 404) {
         throw new Error("User not found");
       }
@@ -215,7 +191,6 @@ export async function getUsers(
     }
 
     const data = await response.json();
-    console.log("Profile data received successfully");
 
     if (!data.data) {
       throw new Error("Invalid response format from API");
@@ -223,8 +198,6 @@ export async function getUsers(
 
     return data.data;
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-
     if (error instanceof Error) {
       throw error;
     }

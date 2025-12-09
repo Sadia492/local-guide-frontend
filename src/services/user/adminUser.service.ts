@@ -28,7 +28,6 @@ export const getUsers = cache(
       // ADD COOKIES TO HEADERS IF PROVIDED
       if (cookieHeader) {
         headers["Cookie"] = cookieHeader;
-        console.log("🔐 Using provided cookies for API request");
       }
 
       const response = await fetch(
@@ -44,7 +43,6 @@ export const getUsers = cache(
       );
 
       if (!response.ok) {
-        console.warn(`User fetch returned: ${response.status}`);
         return [];
       }
 

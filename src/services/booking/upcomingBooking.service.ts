@@ -61,7 +61,6 @@ export const getUpcomingBookings = cache(
       );
 
       if (!response.ok) {
-        console.warn(`Upcoming bookings fetch returned: ${response.status}`);
         return [];
       }
 

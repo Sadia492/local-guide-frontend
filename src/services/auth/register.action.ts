@@ -26,7 +26,6 @@ export async function register(
       error: result.message || "Registration failed",
     };
   } catch (error: any) {
-    console.error("Registration action error:", error);
     return {
       success: false,
       error: error.message || "Something went wrong. Please try again.",
