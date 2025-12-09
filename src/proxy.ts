@@ -1,12 +1,13 @@
-// src/middleware.ts (or proxy.ts)
+// src/proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  // Only do basic protection, let DashboardLayout handle the rest
+// Export the function as "proxy" (not "middleware")
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const accessToken = request.cookies.get("accessToken")?.value;
 
-  // List of public routes
+  // Public routes
   const publicRoutes = [
     "/",
     "/explore",
@@ -15,32 +16,30 @@ export function middleware(request: NextRequest) {
     "/register",
     "/api",
   ];
-
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  // If it's a dashboard route, let it through - DashboardLayout will handle auth
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/profile")) {
-    return NextResponse.next();
+  // If accessing protected route without token
+  if (!isPublicRoute && !accessToken) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // For all other non-public routes, redirect to login if no token
-  if (!isPublicRoute) {
-    const token = request.cookies.get("accessToken")?.value;
-    if (!token) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // If logged in and trying to access auth pages, redirect to dashboard
+  if (accessToken && (pathname === "/login" || pathname === "/register")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
-export const config = {
-  matcher: [
-    // Don't match dashboard routes
-    "/((?!dashboard|profile).*)",
-  ],
-};
+// Config is now "match" instead of "matcher"
+export const match = [
+  "/dashboard/:path*",
+  "/profile/:path*",
+  "/bookings/:path*",
+  "/login",
+  "/register",
+];
