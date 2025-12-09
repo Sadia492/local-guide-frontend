@@ -1,7 +1,6 @@
-// components/auth/ProtectedRoute.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/actions/useAuth";
 
@@ -16,33 +15,42 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
-    if (!isLoading) {
+    // Only run checks after initial load and not during loading
+    if (!isLoading && !hasChecked) {
+      setHasChecked(true);
+
       // If not authenticated at all
       if (!isAuthenticated || !user) {
+        console.log("Not authenticated, redirecting to login");
         router.push(`/login?redirect=${window.location.pathname}`);
         return;
       }
 
       // Check if user has required role
       if (!allowedRoles.includes(user.role)) {
+        console.log(
+          `User role ${user.role} not in allowed roles:`,
+          allowedRoles
+        );
+
         // Redirect based on role
-        if (user.role === "TOURIST") {
-          router.push("/dashboard/tourist/wishlist");
-        } else if (user.role === "GUIDE") {
-          router.push("/dashboard/guide/my-listings");
-        } else if (user.role === "ADMIN") {
-          router.push("/dashboard/admin/users");
-        } else {
-          router.push("/");
-        }
+        const redirectPath =
+          {
+            TOURIST: "/dashboard/tourist/wishlist",
+            GUIDE: "/dashboard/guide/my-listings",
+            ADMIN: "/dashboard/admin/users",
+          }[user.role] || "/";
+
+        router.push(redirectPath);
         return;
       }
     }
-  }, [user, isLoading, isAuthenticated, router, allowedRoles]);
+  }, [user, isLoading, isAuthenticated, router, allowedRoles, hasChecked]);
 
-  // Show loading
+  // Show loading only on initial load
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -51,10 +59,16 @@ export function ProtectedRoute({
     );
   }
 
-  // If not authenticated or wrong role, show nothing (will redirect)
-  if (!isAuthenticated || !user || !allowedRoles.includes(user.role)) {
+  // Show nothing while checking (prevent flash)
+  if (!hasChecked) {
     return null;
   }
 
-  return <>{children}</>;
+  // If authenticated with correct role, show children
+  if (isAuthenticated && user && allowedRoles.includes(user.role)) {
+    return <>{children}</>;
+  }
+
+  // Otherwise show nothing (will redirect)
+  return null;
 }
