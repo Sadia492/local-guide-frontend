@@ -5,11 +5,11 @@ import { MapPin } from "lucide-react";
 import LoginForm from "@/components/modules/Auth/LoginForm";
 import { useAuth } from "@/actions/useAuth";
 
-export const metadata = {
-  title: "Login | LocalGuide",
-  description:
-    "Sign in to your LocalGuide account to book tours or manage your guide listings.",
-};
+// export const metadata = {
+//   title: "Login | LocalGuide",
+//   description:
+//     "Sign in to your LocalGuide account to book tours or manage your guide listings.",
+// };
 
 interface LoginPageProps {
   searchParams: Promise<{
