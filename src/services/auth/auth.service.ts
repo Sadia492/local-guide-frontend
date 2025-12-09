@@ -19,56 +19,108 @@ export interface User {
   updatedAt?: string;
 }
 
+// services/auth/auth.service.ts
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    // Get all cookies from the request
+    // Get cookies from the request
     const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
+    const accessToken = cookieStore.get("accessToken")?.value;
 
-    // Create the Cookie header string
-    const cookieHeader = allCookies
-      .map((cookie) => `${cookie.name}=${cookie.value}`)
-      .join("; ");
+    if (!accessToken) {
+      console.log("No accessToken cookie found");
+      return null;
+    }
+
+    console.log("Access token found, calling API...");
 
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
       {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookieHeader, // Pass ALL cookies
+          Authorization: `Bearer ${accessToken}`, // Use Bearer token
         },
         cache: "no-store",
       }
     );
 
-    if (response.ok) {
-      const data = await response.json();
+    console.log("API response status:", response.status);
 
-      // Handle different response structures
-      if (data.data) {
-        return data.data;
-      } else if (data.user) {
-        return data.user;
-      } else if (data._id) {
-        return data; // The response IS the user object
-      }
-
+    if (!response.ok) {
+      console.log("API response not OK:", response.status, response.statusText);
       return null;
     }
 
-    // Try alternative: Maybe it needs Authorization header instead
-    if (response.status === 401) {
-      // Check if there's a token in localStorage (if this were client-side)
-      // Since we're server-side, we can only use cookies
+    const data = await response.json();
+    console.log("API response data:", data);
 
-      return null;
+    // Return user based on your API's response structure
+    if (data.success && data.data) {
+      return data.data;
+    } else if (data.user) {
+      return data.user;
+    } else if (data._id) {
+      return data;
     }
 
     return null;
   } catch (error) {
+    console.error("Error in getCurrentUser:", error);
     return null;
   }
 }
+
+// export async function getCurrentUser(): Promise<User | null> {
+//   try {
+//     // Get all cookies from the request
+//     const cookieStore = await cookies();
+//     const allCookies = cookieStore.getAll();
+
+//     // Create the Cookie header string
+//     const cookieHeader = allCookies
+//       .map((cookie) => `${cookie.name}=${cookie.value}`)
+//       .join("; ");
+
+//     const response = await fetch(
+//       `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Cookie: cookieHeader, // Pass ALL cookies
+//         },
+//         cache: "no-store",
+//       }
+//     );
+
+//     if (response.ok) {
+//       const data = await response.json();
+
+//       // Handle different response structures
+//       if (data.data) {
+//         return data.data;
+//       } else if (data.user) {
+//         return data.user;
+//       } else if (data._id) {
+//         return data; // The response IS the user object
+//       }
+
+//       return null;
+//     }
+
+//     // Try alternative: Maybe it needs Authorization header instead
+//     if (response.status === 401) {
+//       // Check if there's a token in localStorage (if this were client-side)
+//       // Since we're server-side, we can only use cookies
+
+//       return null;
+//     }
+
+//     return null;
+//   } catch (error) {
+//     return null;
+//   }
+// }
 export async function isAuthenticated(): Promise<boolean> {
   const user = await getCurrentUser();
   return !!user;
