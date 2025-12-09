@@ -55,7 +55,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       search === "" ||
       tour.title.toLowerCase().includes(search.toLowerCase()) ||
       tour.city.toLowerCase().includes(search.toLowerCase()) ||
-      tour.description.toLowerCase().includes(search.toLowerCase()) ||
+      (tour.description as string)
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
       tour.category.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory = !category || tour.category === category;
@@ -101,7 +103,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           <Suspense fallback={<div>Loading tours...</div>}>
             {filteredListings.length > 0 ? (
               <TourList
-                listings={filteredListings}
+                listings={filteredListings as any}
                 isAuthenticated={isAuth}
                 currentUser={currentUser}
               />
