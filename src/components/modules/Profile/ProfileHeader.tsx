@@ -28,6 +28,8 @@ interface ProfileHeaderProps {
   isOwnProfile: boolean;
   isGuide: boolean;
   isTourist: boolean;
+
+  onRefresh?: () => void; // Add this prop
 }
 
 export default function ProfileHeader({
@@ -37,6 +39,7 @@ export default function ProfileHeader({
   isOwnProfile,
   isGuide,
   isTourist,
+  onRefresh,
 }: ProfileHeaderProps) {
   const router = useRouter();
   const memberSince = new Date(user.createdAt).getFullYear();

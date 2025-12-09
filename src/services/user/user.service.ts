@@ -1,4 +1,4 @@
-import { UserData } from "./adminUser.service";
+// services/user/user.service.ts
 
 export interface UserProfile {
   _id: string;
@@ -57,150 +57,80 @@ export interface ProfileData {
   stats: Stats;
 }
 
-// Helper function to get API URL with better error handling
-function getApiUrl() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) {
-    throw new Error("API URL is not configured");
-  }
-  return apiUrl;
-}
+// CLIENT-SIDE function
+export const fetchUserProfileClient = async (
+  userId: string
+): Promise<ProfileData> => {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) {
+      throw new Error("API URL is not configured");
+    }
 
+    const response = await fetch(
+      `${apiUrl}/api/user/profile-details/${userId}`,
+      {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("User not found");
+      }
+
+      if (response.status === 401) {
+        // Try to get more specific error from response
+        try {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Authentication required to view profile"
+          );
+        } catch (e) {
+          throw new Error("Authentication required to view this profile");
+        }
+      }
+
+      let errorMessage = "Failed to fetch user profile";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // Ignore if response is not JSON
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    if (!data.data) {
+      throw new Error("Invalid response format from API");
+    }
+
+    return data.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("An unexpected error occurred while fetching user profile");
+  }
+};
+
+// Keep the server function for backward compatibility (with warning)
 export async function getUserProfile(
   userId: string,
   requestCookies?: string
 ): Promise<ProfileData> {
-  try {
-    const apiUrl = getApiUrl();
+  console.warn(
+    "getUserProfile with cookies is deprecated. Use fetchUserProfileClient instead."
+  );
 
-    // Prepare headers
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    // If we have cookies from the request, pass them
-    if (requestCookies) {
-      headers.Cookie = requestCookies;
-    }
-
-    const response = await fetch(
-      `${apiUrl}/api/user/profile-details/${userId}`,
-      {
-        // IMPORTANT: Don't use credentials: 'include' when passing cookies manually
-        // credentials: 'include',
-        headers,
-        cache: "no-store",
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error("User not found");
-      }
-
-      if (response.status === 401) {
-        // Try to get more specific error from response
-        try {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || "Authentication required to view profile"
-          );
-        } catch (e) {
-          throw new Error("Authentication required to view this profile");
-        }
-      }
-
-      let errorMessage = "Failed to fetch user profile";
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch (e) {
-        // Ignore if response is not JSON
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-
-    if (!data.data) {
-      throw new Error("Invalid response format from API");
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("An unexpected error occurred while fetching user profile");
-  }
-}
-export async function getUsers(
-  userId: string,
-  requestCookies?: string
-): Promise<ProfileData> {
-  try {
-    const apiUrl = getApiUrl();
-
-    // Prepare headers
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    // If we have cookies from the request, pass them
-    if (requestCookies) {
-      headers.Cookie = requestCookies;
-    }
-
-    const response = await fetch(
-      `${apiUrl}/api/user/profile-details/${userId}`,
-      {
-        // IMPORTANT: Don't use credentials: 'include' when passing cookies manually
-        // credentials: 'include',
-        headers,
-        cache: "no-store",
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error("User not found");
-      }
-
-      if (response.status === 401) {
-        // Try to get more specific error from response
-        try {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || "Authentication required to view profile"
-          );
-        } catch (e) {
-          throw new Error("Authentication required to view this profile");
-        }
-      }
-
-      let errorMessage = "Failed to fetch user profile";
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch (e) {
-        // Ignore if response is not JSON
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-
-    if (!data.data) {
-      throw new Error("Invalid response format from API");
-    }
-
-    return data.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("An unexpected error occurred while fetching user profile");
-  }
+  // If cookies are provided, we can't use them reliably in production
+  // Just call the client function which uses credentials: "include"
+  return fetchUserProfileClient(userId);
 }
