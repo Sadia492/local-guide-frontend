@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   // Check if user is already logged in (server-side)
   const currentUser = user;
-  console.log(currentUser);
+  console.log(currentUser, "fix fix fix");
 
   if (currentUser) {
     if (redirectTo !== "/") {
