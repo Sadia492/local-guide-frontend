@@ -1,17 +1,12 @@
-import { cookies } from "next/headers";
-import { getUpcomingBookings } from "@/services/booking/upcomingBooking.service";
-import UpcomingBookingsClient from "@/components/modules/Guide/Booking/UpcomingBookingsClient";
+// app/(dashboard)/dashboard/guide/bookings/upcoming/page.tsx
 
-export default async function UpcomingBookingsPage() {
-  // Get cookies from the server request
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
+import UpcomingBookingsWrapper from "@/components/modules/Guide/Booking/UpcomingBookingsWrapper";
 
-  // Fetch upcoming bookings on the server
-  const bookings = await getUpcomingBookings(cookieHeader);
-
-  return <UpcomingBookingsClient initialBookings={bookings} />;
+export default function UpcomingBookingsPage() {
+  return <UpcomingBookingsWrapper />;
 }
+
+export const metadata = {
+  title: "Upcoming Bookings | Travel Buddy",
+  description: "Manage your upcoming tour bookings",
+};

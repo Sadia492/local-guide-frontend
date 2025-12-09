@@ -19,11 +19,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
-import {
-  approveBookingAction,
-  rejectBookingAction,
-} from "@/actions/bookingActions";
 import { Booking } from "@/services/listing/pendingBooking.service";
+import { pendingBookingService } from "@/services/listing/pendingBooking.service";
 import { filterBookings, formatDate, getRequestAge } from "@/lib/bookingUtils";
 
 interface PendingRequestsClientProps {
@@ -37,6 +34,7 @@ export default function PendingRequestsClient({
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filter bookings based on search
   const filteredBookings = useMemo(() => {
@@ -45,12 +43,16 @@ export default function PendingRequestsClient({
 
   // Refresh data
   const refreshData = async () => {
-    setLoading(true);
+    setIsRefreshing(true);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/booking/pending`,
         {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
         }
       );
 
@@ -60,6 +62,8 @@ export default function PendingRequestsClient({
 
       const data = await response.json();
       setBookings(data.data || []);
+
+      toast.success("Pending requests refreshed successfully");
     } catch (err) {
       console.error("Error fetching pending bookings:", err);
       toast.error("Failed to load pending requests", {
@@ -67,7 +71,7 @@ export default function PendingRequestsClient({
           err instanceof Error ? err.message : "Please try again later",
       });
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -89,7 +93,7 @@ export default function PendingRequestsClient({
 
     if (result.isConfirmed) {
       try {
-        await approveBookingAction(bookingId);
+        await pendingBookingService.approveBooking(bookingId);
 
         // Remove from local state
         setBookings(bookings.filter((booking) => booking._id !== bookingId));
@@ -103,6 +107,9 @@ export default function PendingRequestsClient({
             },
           },
         });
+
+        // Optionally refresh data
+        await refreshData();
       } catch (error) {
         console.error("Error approving booking:", error);
         toast.error("Failed to approve booking");
@@ -126,7 +133,7 @@ export default function PendingRequestsClient({
 
     if (result.isConfirmed) {
       try {
-        await rejectBookingAction(bookingId);
+        await pendingBookingService.rejectBooking(bookingId);
 
         // Remove from local state
         setBookings(bookings.filter((booking) => booking._id !== bookingId));
@@ -134,12 +141,18 @@ export default function PendingRequestsClient({
         toast.success("Booking rejected", {
           description: "The booking request has been rejected",
         });
+
+        // Optionally refresh data
+        await refreshData();
       } catch (error) {
         console.error("Error rejecting booking:", error);
         toast.error("Failed to reject booking");
       }
     }
   };
+
+  // Update the refresh button state
+  const isLoading = loading || isRefreshing;
 
   return (
     <div className="p-6">
@@ -157,10 +170,10 @@ export default function PendingRequestsClient({
           <div className="flex items-center gap-3">
             <button
               onClick={refreshData}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              disabled={isLoading}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
-              {loading ? (
+              {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <RefreshCw className="w-4 h-4" />
@@ -217,7 +230,7 @@ export default function PendingRequestsClient({
               placeholder="Search pending requests..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
               <Clock className="w-4 h-4 text-gray-400" />

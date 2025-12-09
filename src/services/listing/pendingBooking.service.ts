@@ -1,4 +1,4 @@
-import { cache } from "react";
+// services/listing/pendingBooking.service.ts
 
 export interface BookingUser {
   _id: string;
@@ -37,85 +37,95 @@ export interface Booking {
   updatedAt: string;
 }
 
-// Cache for pending bookings
-export const getPendingBookings = cache(
-  async (cookieHeader?: string): Promise<Booking[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/pending`,
-        {
-          headers,
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["pending-bookings"],
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching pending bookings:", error);
-      return [];
-    }
-  }
-);
-
-// Service functions for mutations
-export const bookingService = {
-  // Update booking status
-  // Update booking status - ACCEPT COOKIES PARAMETER
-  async updateBookingStatus(
-    id: string,
-    status: "CONFIRMED" | "CANCELLED",
-    cookies?: string // Add cookies parameter
-  ): Promise<void> {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    // ADD COOKIES TO HEADERS IF PROVIDED
-    if (cookies) {
-      headers["Cookie"] = cookies;
-    }
-
+// CLIENT-SIDE fetch function
+export const fetchPendingBookingsClient = async (): Promise<Booking[]> => {
+  try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/status`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/pending`,
       {
-        method: "PATCH",
-        headers,
-        // Use 'omit' when manually setting cookies
-        credentials: cookies ? "omit" : "include",
-        body: JSON.stringify({ status }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Failed to update booking status");
+      console.error("Failed to fetch pending bookings:", response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching pending bookings:", error);
+    return [];
+  }
+};
+
+// Service functions for mutations
+export const pendingBookingService = {
+  // Approve booking
+  async approveBooking(
+    id: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/status`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "CONFIRMED" }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to approve booking");
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error approving booking:", error);
+      throw error;
     }
   },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
+  // Reject booking - send "CANCELLED" status
+  async rejectBooking(
+    id: string
+  ): Promise<{ success: boolean; message?: string }> {
     try {
-      await fetch("/api/revalidate?tag=pending-bookings", {
-        method: "POST",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/status`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "CANCELLED" }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to reject booking");
+      }
+
+      return { success: true };
     } catch (error) {
-      console.error("Failed to revalidate cache:", error);
+      console.error("Error rejecting booking:", error);
+      throw error;
     }
+  },
+
+  // Refresh pending bookings data
+  async refreshPendingBookings(): Promise<Booking[]> {
+    return fetchPendingBookingsClient();
   },
 };

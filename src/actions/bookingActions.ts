@@ -1,34 +1,24 @@
+// actions/bookingActions.ts
 "use server";
 
-import { bookingService } from "@/services/listing/pendingBooking.service";
-import { cookies } from "next/headers";
+import { pendingBookingService } from "@/services/listing/pendingBooking.service";
 
 export async function approveBookingAction(id: string): Promise<void> {
   try {
-    // Get cookies from the server context
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((cookie) => `${cookie.name}=${cookie.value}`)
-      .join("; ");
-
-    await bookingService.updateBookingStatus(id, "CONFIRMED", cookieHeader);
+    // This will be called from client components
+    // The service already handles the authentication via credentials: "include"
+    await pendingBookingService.approveBooking(id);
   } catch (error) {
+    console.error("Error in approveBookingAction:", error);
     throw error;
   }
 }
 
 export async function rejectBookingAction(id: string): Promise<void> {
   try {
-    // Get cookies from the server context
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((cookie) => `${cookie.name}=${cookie.value}`)
-      .join("; ");
-
-    await bookingService.updateBookingStatus(id, "CANCELLED", cookieHeader);
+    await pendingBookingService.rejectBooking(id);
   } catch (error) {
+    console.error("Error in rejectBookingAction:", error);
     throw error;
   }
 }

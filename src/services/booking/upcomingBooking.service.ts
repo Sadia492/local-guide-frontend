@@ -1,4 +1,4 @@
-import { cache } from "react";
+// services/booking/upcomingBooking.service.ts
 
 export interface BookingUser {
   _id: string;
@@ -37,41 +37,32 @@ export interface Booking {
   updatedAt: string;
 }
 
-// Cache for upcoming bookings
-export const getUpcomingBookings = cache(
-  async (cookieHeader?: string): Promise<Booking[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
+// CLIENT-SIDE fetch function
+export const fetchUpcomingBookingsClient = async (): Promise<Booking[]> => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/upcoming`,
+      {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
+    );
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/booking/upcoming`,
-        {
-          headers,
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["upcoming-bookings"],
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching upcoming bookings:", error);
+    if (!response.ok) {
+      console.error("Failed to fetch bookings:", response.status);
       return [];
     }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    return [];
   }
-);
+};
 
 // Service functions for mutations
 export const bookingService = {
@@ -98,14 +89,56 @@ export const bookingService = {
     }
   },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
-    try {
-      await fetch("/api/revalidate?tag=upcoming-bookings", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to revalidate cache:", error);
+  // Cancel booking
+  async cancelBooking(id: string): Promise<void> {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/cancel`,
+      {
+        method: "PATCH",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to cancel booking");
     }
+  },
+
+  // Confirm booking
+  async confirmBooking(id: string): Promise<void> {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/confirm`,
+      {
+        method: "PATCH",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to confirm booking");
+    }
+  },
+
+  // Complete booking
+  async completeBooking(id: string): Promise<void> {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${id}/complete`,
+      {
+        method: "PATCH",
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to complete booking");
+    }
+  },
+
+  // Refresh bookings data
+  async refreshBookings(): Promise<Booking[]> {
+    return fetchUpcomingBookingsClient();
   },
 };

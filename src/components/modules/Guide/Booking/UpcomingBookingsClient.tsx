@@ -21,7 +21,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
-import { Booking } from "@/services/booking/upcomingBooking.service";
+import {
+  Booking,
+  bookingService,
+} from "@/services/booking/upcomingBooking.service";
 
 import {
   cancelBookingAction,
@@ -146,6 +149,8 @@ export default function UpcomingBookingsClient({
   const stats = getBookingStats(bookings);
 
   // Refresh data
+  // In UpcomingBookingsClient.tsx, replace the refreshData function:
+
   const refreshData = async () => {
     setLoading(true);
     try {
@@ -153,6 +158,10 @@ export default function UpcomingBookingsClient({
         `${process.env.NEXT_PUBLIC_API_URL}/api/booking/upcoming`,
         {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
         }
       );
 
@@ -162,6 +171,8 @@ export default function UpcomingBookingsClient({
 
       const data = await response.json();
       setBookings(data.data || []);
+
+      toast.success("Bookings refreshed successfully");
     } catch (err) {
       console.error("Error fetching bookings:", err);
       toast.error("Failed to load bookings", {
@@ -188,7 +199,7 @@ export default function UpcomingBookingsClient({
 
     if (result.isConfirmed) {
       try {
-        await cancelBookingAction(bookingId);
+        await bookingService.cancelBooking(bookingId);
 
         // Update local state
         setBookings(
@@ -202,6 +213,9 @@ export default function UpcomingBookingsClient({
         toast.success("Booking cancelled", {
           description: "The booking has been cancelled successfully",
         });
+
+        // Optionally refresh data
+        await refreshData();
       } catch (error) {
         console.error("Error cancelling booking:", error);
         toast.error("Failed to cancel booking");
@@ -223,7 +237,7 @@ export default function UpcomingBookingsClient({
 
     if (result.isConfirmed) {
       try {
-        await confirmBookingAction(bookingId);
+        await bookingService.confirmBooking(bookingId);
 
         // Update local state
         setBookings(
@@ -237,6 +251,9 @@ export default function UpcomingBookingsClient({
         toast.success("Booking confirmed", {
           description: "The booking has been confirmed successfully",
         });
+
+        // Optionally refresh data
+        await refreshData();
       } catch (error) {
         console.error("Error confirming booking:", error);
         toast.error("Failed to confirm booking");
@@ -258,7 +275,7 @@ export default function UpcomingBookingsClient({
 
     if (result.isConfirmed) {
       try {
-        await completeBookingAction(bookingId);
+        await bookingService.completeBooking(bookingId);
 
         // Update local state
         setBookings(
@@ -272,6 +289,9 @@ export default function UpcomingBookingsClient({
         toast.success("Booking completed", {
           description: "The tour has been marked as completed",
         });
+
+        // Optionally refresh data
+        await refreshData();
       } catch (error) {
         console.error("Error completing booking:", error);
         toast.error("Failed to complete booking");
