@@ -1,4 +1,4 @@
-import { cache } from "react";
+// services/listing/guideListing.service.ts
 
 export interface Listing {
   _id: string;
@@ -19,43 +19,32 @@ export interface Listing {
   updatedAt: string;
 }
 
-// Cache for guide's listings - ACCEPT COOKIES PARAMETER
-export const getMyListings = cache(
-  async (cookieHeader?: string): Promise<Listing[]> => {
-    try {
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-
-      // ADD COOKIES TO HEADERS IF PROVIDED
-      if (cookieHeader) {
-        headers["Cookie"] = cookieHeader;
+// CLIENT-SIDE fetch function
+export const fetchMyListingsClient = async (): Promise<Listing[]> => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/listing/my-listings`,
+      {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
+    );
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/listing/my-listings`,
-        {
-          headers,
-          // Use 'omit' when manually setting cookies
-          credentials: cookieHeader ? "omit" : "include",
-          next: {
-            tags: ["my-listings"],
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching listings:", error);
+    if (!response.ok) {
+      console.error("Failed to fetch listings:", response.status);
       return [];
     }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    return [];
   }
-);
+};
 
 // Service functions for mutations
 export const listingService = {
@@ -95,14 +84,64 @@ export const listingService = {
     }
   },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
-    try {
-      await fetch("/api/revalidate?tag=my-listings", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to revalidate cache:", error);
-    }
+  // Refresh listings data
+  async refreshListings(): Promise<Listing[]> {
+    return fetchMyListingsClient();
   },
+};
+
+// Utility functions
+export const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+export const filterListings = (
+  listings: Listing[],
+  filters: {
+    searchTerm: string;
+    statusFilter: string;
+    categoryFilter: string;
+  }
+) => {
+  const { searchTerm, statusFilter, categoryFilter } = filters;
+
+  return listings.filter((listing) => {
+    const matchesSearch =
+      !searchTerm ||
+      listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.city.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && listing.isActive) ||
+      (statusFilter === "inactive" && !listing.isActive);
+
+    const matchesCategory =
+      categoryFilter === "all" || listing.category === categoryFilter;
+
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+};
+
+export const getListingStats = (listings: Listing[]) => {
+  const totalListings = listings.length;
+  const activeListings = listings.filter((l) => l.isActive).length;
+  const inactiveListings = totalListings - activeListings;
+  const totalRevenue = listings.reduce((sum, l) => sum + l.fee, 0);
+
+  return {
+    totalListings,
+    activeListings,
+    inactiveListings,
+    totalRevenue,
+  };
+};
+
+export const getUniqueCategories = (listings: Listing[]) => {
+  return Array.from(new Set(listings.map((listing) => listing.category)));
 };

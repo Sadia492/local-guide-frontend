@@ -64,6 +64,7 @@ export default function MyListingsClient({
 }: MyListingsClientProps) {
   const router = useRouter();
   const [listings, setListings] = useState(serverListings);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Local state for filters
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
@@ -171,8 +172,8 @@ export default function MyListingsClient({
           description: `"${title}" has been permanently deleted.`,
         });
 
-        // Refresh server data
-        router.refresh();
+        // Optionally refresh from server
+        await refreshListings();
       } catch (error) {
         console.error("Error deleting listing:", error);
         toast.error("Failed to delete listing");
@@ -238,12 +239,44 @@ export default function MyListingsClient({
           description: `"${title}" has been ${action}d successfully.`,
         });
 
-        // Refresh server data
-        router.refresh();
+        // Optionally refresh from server
+        await refreshListings();
       } catch (error) {
         console.error("Error updating listing status:", error);
         toast.error("Failed to update listing status");
       }
+    }
+  };
+
+  const refreshListings = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/listing/my-listings`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch listings: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setListings(data.data);
+        toast.success("Listings refreshed successfully");
+      }
+    } catch (err) {
+      console.error("Error refreshing listings:", err);
+      toast.error("Failed to refresh listings");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -262,10 +295,15 @@ export default function MyListingsClient({
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => router.refresh()}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+              onClick={refreshListings}
+              disabled={isRefreshing}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
-              <Loader2 className="w-4 h-4" />
+              {isRefreshing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Loader2 className="w-4 h-4" />
+              )}
               Refresh
             </button>
             <Link
