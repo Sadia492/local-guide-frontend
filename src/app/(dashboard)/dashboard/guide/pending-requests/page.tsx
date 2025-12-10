@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/guide/bookings/pending/page.tsx
-
 import PendingRequestsWrapper from "@/components/modules/Guide/Booking/PendingRequestsWrapper";
 
 export default function PendingRequestsPage() {

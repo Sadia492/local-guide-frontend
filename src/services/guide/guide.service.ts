@@ -1,4 +1,3 @@
-// If you want to fetch data from an API
 export async function getGuideStats() {
   // This can be an API call or database query
   return {

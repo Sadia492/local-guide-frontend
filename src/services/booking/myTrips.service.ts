@@ -1,4 +1,3 @@
-// services/booking/myTrips.service.ts
 export interface Guide {
   _id: string;
   name: string;

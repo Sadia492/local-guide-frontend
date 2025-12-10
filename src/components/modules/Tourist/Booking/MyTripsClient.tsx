@@ -660,40 +660,6 @@ export default function MyTripsClient({
           </Link>
         </div>
       )}
-
-      {/* Info Box for Reviews */}
-      {stats.completed > 0 && stats.reviewed < stats.completed && (
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <MessageSquare className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-yellow-900 mb-2">
-                Share Your Experience
-              </h4>
-              <p className="text-sm text-yellow-800 mb-3">
-                You have {stats.completed - stats.reviewed} completed tour(s)
-                waiting for your review. Your feedback helps guides improve and
-                assists other travelers in making decisions.
-              </p>
-              <button
-                onClick={() => {
-                  const firstUnreviewed = filteredTrips.find(
-                    (b) => b.status === "COMPLETED" && !hasReview(b)
-                  );
-                  if (firstUnreviewed) {
-                    handleReviewClick(firstUnreviewed);
-                  }
-                }}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
-              >
-                Write a Review Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

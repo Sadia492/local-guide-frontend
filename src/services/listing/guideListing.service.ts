@@ -1,5 +1,3 @@
-// services/listing/guideListing.service.ts
-
 export interface Listing {
   _id: string;
   title: string;

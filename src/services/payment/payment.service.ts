@@ -1,4 +1,3 @@
-// services/payment/payment.service.ts
 export interface PaymentResponse {
   paymentUrl: string;
   success: boolean;

@@ -1,5 +1,3 @@
-// services/user/user.service.ts
-
 export interface UserProfile {
   _id: string;
   name: string;

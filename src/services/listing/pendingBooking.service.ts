@@ -1,5 +1,3 @@
-// services/listing/pendingBooking.service.ts
-
 export interface BookingUser {
   _id: string;
   name: string;

@@ -1,4 +1,3 @@
-// app/(dashboard)/dashboard/guide/bookings/upcoming/UpcomingBookingsWrapper.tsx
 "use client";
 
 import { useState, useEffect } from "react";

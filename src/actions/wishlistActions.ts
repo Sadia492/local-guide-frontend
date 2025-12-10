@@ -1,4 +1,3 @@
-// actions/wishlistActions.ts
 "use client";
 
 import { wishlistService } from "@/services/wishlist/wishlist2.service";

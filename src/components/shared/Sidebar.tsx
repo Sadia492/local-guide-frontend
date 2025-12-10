@@ -1,4 +1,3 @@
-// components/shared/Sidebar.tsx
 "use client";
 
 import { useAuth } from "@/actions/useAuth";

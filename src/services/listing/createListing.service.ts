@@ -8,8 +8,8 @@ export interface CreateListingData {
   maxGroupSize: number;
   meetingPoint: string;
   language: string;
-  itinerary?: string; // Make optional to match backend
-  images?: string[]; // Make optional to match backend
+  itinerary?: string;
+  images?: string[];
 }
 
 export const createListingService = {

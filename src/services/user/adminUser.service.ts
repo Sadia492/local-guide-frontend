@@ -1,4 +1,3 @@
-// services/user/adminUser.service.ts
 "use client";
 
 export interface UserData {

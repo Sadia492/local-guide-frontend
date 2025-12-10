@@ -1,4 +1,3 @@
-// app/(dashboard)/dashboard/tourist/wishlist/WishlistWrapper.tsx
 "use client";
 
 import { useState, useEffect } from "react";

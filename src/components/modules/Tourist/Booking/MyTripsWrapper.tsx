@@ -1,4 +1,3 @@
-// app/(dashboard)/dashboard/tourist/my-trips/MyTripsWrapper.tsx
 "use client";
 
 import { useState, useEffect } from "react";

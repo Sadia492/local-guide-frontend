@@ -1,6 +1,4 @@
-// services/wishlist/wishlist2.service.ts
-"use client"; // Add this at the top
-
+"use client";
 export interface Guide {
   _id: string;
   name: string;

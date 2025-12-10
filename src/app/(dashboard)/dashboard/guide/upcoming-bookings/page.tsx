@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/guide/bookings/upcoming/page.tsx
-
 import UpcomingBookingsWrapper from "@/components/modules/Guide/Booking/UpcomingBookingsWrapper";
 
 export default function UpcomingBookingsPage() {

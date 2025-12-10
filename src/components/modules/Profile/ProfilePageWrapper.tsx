@@ -1,4 +1,3 @@
-// app/profile/[id]/ProfilePageWrapper.tsx
 "use client";
 
 import { useState, useEffect } from "react";

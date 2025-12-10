@@ -1,4 +1,3 @@
-// actions/userActions.ts
 "use client";
 
 import { userService } from "@/services/user/adminUser.service";
