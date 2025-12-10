@@ -15,6 +15,7 @@ import {
   DollarSign,
   Star,
   User,
+  Plus,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Swal from "sweetalert2";
@@ -246,14 +247,25 @@ export default function ListingManagementClient({
     <div className="p-6">
       {/* Header Section */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex justify-between align-middle">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Listing Management
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Manage all tour listings on the platform
+              </p>
+            </div>
+          </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Listing Management
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Manage all tour listings on the platform
-            </p>
+            <Link
+              href="/dashboard/admin/listings/create"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Create New Listing
+            </Link>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -43,7 +44,7 @@ export default function CreateListingClient({
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
+  const pathname = usePathname();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -56,7 +57,15 @@ export default function CreateListingClient({
     language: "English",
     itinerary: "",
   });
-
+  const getBackUrl = () => {
+    if (pathname?.includes("/dashboard/admin")) {
+      return "/dashboard/admin/listings";
+    } else if (pathname?.includes("/dashboard/guide")) {
+      return "/dashboard/guide/my-listings";
+    }
+    // Default fallback
+    return "/dashboard";
+  };
   // Clean up preview URLs on unmount
   useEffect(() => {
     return () => {
@@ -178,7 +187,7 @@ export default function CreateListingClient({
           </div>
 
           <Link
-            href="/dashboard/guide/my-listings"
+            href={getBackUrl()}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

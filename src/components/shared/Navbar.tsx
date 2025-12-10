@@ -101,10 +101,10 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist/wishlist"
+                      href="/dashboard/tourist/my-trips"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
-                      Dashboard
+                      My Bookings
                     </Link>
                   </>
                 )}
