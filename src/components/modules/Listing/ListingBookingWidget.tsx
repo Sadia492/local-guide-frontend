@@ -86,7 +86,7 @@ export default function ListingBookingWidget({
   };
 
   return (
-    <div className="sticky top-8">
+    <div className="">
       <div className="bg-white rounded-xl shadow-lg border overflow-hidden">
         {/* Price Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">

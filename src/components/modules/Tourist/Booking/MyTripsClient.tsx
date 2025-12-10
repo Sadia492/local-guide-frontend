@@ -34,6 +34,7 @@ import {
   hasReview,
 } from "@/lib/tripUtils";
 import { createPaymentAction } from "@/actions/tripActions";
+import { paymentService } from "@/services/payment/payment.service";
 
 interface MyTripsClientProps {
   initialTrips: Booking[];
@@ -214,13 +215,25 @@ export default function MyTripsClient({
     try {
       setProcessingPayment(bookingId);
 
-      const result = await createPaymentAction(bookingId);
+      // Use the client-side service
+      const result = await paymentService.createPayment(bookingId);
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to create payment session");
+      }
 
       // Redirect to Stripe payment page
-      window.location.href = result.paymentUrl;
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        throw new Error("No payment URL returned");
+      }
     } catch (error) {
       console.error("Error creating payment:", error);
-      toast.error("Failed to create payment session");
+      toast.error("Failed to create payment session", {
+        description:
+          error instanceof Error ? error.message : "Please try again",
+      });
     } finally {
       setProcessingPayment(null);
     }

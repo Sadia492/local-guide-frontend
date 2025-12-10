@@ -1,29 +1,17 @@
+// actions/tripActions.ts
 "use server";
 
+// This is a wrapper that can be called from client components
+// It will redirect the actual API call to the client
 export async function createPaymentAction(
   bookingId: string
 ): Promise<{ paymentUrl: string }> {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/booking/${bookingId}/create-payment`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
+  // This is just a placeholder since we'll handle it client-side
+  // You can keep this for backward compatibility or logging
+  console.log(`Payment requested for booking: ${bookingId}`);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to create payment session");
-    }
-
-    if (!data.success) {
-      throw new Error(data.message || "Failed to create payment");
-    }
-
-    return data.data;
-  } catch (error) {
-    throw error;
-  }
+  // Throw an error to force client-side handling
+  throw new Error(
+    "Payment must be processed client-side. Please use the payment service directly."
+  );
 }

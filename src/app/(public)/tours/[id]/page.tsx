@@ -202,12 +202,13 @@ export default function ListingPage() {
 
             <ListingReviews reviews={reviews} />
           </div>
-
+          {/* Right Column - Booking Widget */}
           {/* Right Column - Booking Widget */}
           <div className="lg:col-span-1">
-            <ListingBookingWidget listing={listing} listingId={id} />
-
-            <ListingGuideInfo guide={listing.guide} />
+            <div className="sticky top-8 space-y-6">
+              <ListingBookingWidget listing={listing} listingId={id} />
+              <ListingGuideInfo guide={listing.guide} />
+            </div>
           </div>
         </div>
       </div>
