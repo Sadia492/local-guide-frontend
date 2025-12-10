@@ -45,7 +45,9 @@ export default function ProfileHeader({
   const memberSince = new Date(user.createdAt).getFullYear();
 
   const handleSuccess = () => {
-    router.refresh();
+    if (onRefresh) {
+      onRefresh(); // ✅ This calls the parent's refresh function
+    }
   };
 
   return (

@@ -277,6 +277,8 @@ export function EditUserDialog({ userId, onSuccess }: EditUserDialogProps) {
       });
 
       setOpen(false);
+
+      // ✅ Call onSuccess callback which should trigger refresh
       if (onSuccess) {
         onSuccess();
       }
