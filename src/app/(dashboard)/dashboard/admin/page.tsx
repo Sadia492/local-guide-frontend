@@ -621,85 +621,85 @@
 //   );
 // }
 // app/dashboard/admin/page.tsx
-import React from "react";
+// app/dashboard/admin/page.tsx
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   getAdminDashboardStats,
   getChartData,
 } from "@/services/meta/meta.service";
 import AdminDashboardClient from "@/components/modules/Admin/AdminDashboardClient";
 
-export default async function AdminDashboardPage() {
-  try {
-    // Fetch data on the server
-    const [statsResponse, chartDataResponse] = await Promise.allSettled([
-      getAdminDashboardStats(),
-      getChartData(),
-    ]);
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<any | null>(null);
+  const [chartData, setChartData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const stats =
-      statsResponse.status === "fulfilled" ? statsResponse.value : null;
-    const chartData =
-      chartDataResponse.status === "fulfilled" ? chartDataResponse.value : null;
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    // If stats is null, show error
-    if (!stats) {
-      return (
-        <div className="p-6">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-6 h-6 text-red-600">⚠️</div>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Unable to Load Dashboard
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Failed to fetch dashboard data from the server.
-            </p>
-          </div>
-        </div>
-      );
-    }
+        // Fetch both in parallel
+        const [statsData, chartData] = await Promise.all([
+          getAdminDashboardStats(),
+          getChartData(),
+        ]);
 
-    // Prepare data for client component
-    const bookingChartData =
-      chartData?.barChartData?.map((item) => ({
-        month: item.month.split("-")[1],
-        count: item.count,
-      })) || [];
+        setStats(statsData);
+        setChartData(chartData);
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load dashboard data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const categoryChartData =
-      chartData?.pieChartData?.listingCategories?.map((item) => ({
-        name: item._id,
-        value: item.count,
-      })) || [];
+    fetchDashboardData();
+  }, []);
 
-    const userRoleData =
-      chartData?.pieChartData?.userRoles?.map((item) => ({
-        name: item._id,
-        value: item.count,
-      })) || [];
-
+  if (loading) {
     return (
-      <AdminDashboardClient
-        stats={stats}
-        bookingChartData={bookingChartData}
-        categoryChartData={categoryChartData}
-        userRoleData={userRoleData}
-        hasChartData={!!chartData}
-      />
+      <div className="p-6 space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            >
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-10 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
-  } catch (error) {
-    console.error("Error in AdminDashboardPage:", error);
+  }
 
+  if (error || !stats) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <div className="w-6 h-6 text-red-600">⚠️</div>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Server Error</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Error Loading Dashboard
+          </h2>
           <p className="text-gray-600 mb-4">
-            An unexpected error occurred while loading the dashboard.
+            {error || "Failed to load dashboard data"}
           </p>
           <button
             onClick={() => window.location.reload()}
@@ -711,4 +711,33 @@ export default async function AdminDashboardPage() {
       </div>
     );
   }
+
+  // Prepare chart data
+  const bookingChartData =
+    chartData?.barChartData?.map((item: any) => ({
+      month: item.month.split("-")[1],
+      count: item.count,
+    })) || [];
+
+  const categoryChartData =
+    chartData?.pieChartData?.listingCategories?.map((item: any) => ({
+      name: item._id,
+      value: item.count,
+    })) || [];
+
+  const userRoleData =
+    chartData?.pieChartData?.userRoles?.map((item: any) => ({
+      name: item._id,
+      value: item.count,
+    })) || [];
+
+  return (
+    <AdminDashboardClient
+      stats={stats}
+      bookingChartData={bookingChartData}
+      categoryChartData={categoryChartData}
+      userRoleData={userRoleData}
+      hasChartData={!!chartData}
+    />
+  );
 }

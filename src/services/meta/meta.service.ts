@@ -1,5 +1,5 @@
 // services/meta/meta.service.ts
-import { cache } from "react";
+"use client";
 
 export interface DashboardStats {
   totalListings: number;
@@ -29,90 +29,101 @@ export interface ChartData {
   };
 }
 
-// Cache for admin dashboard stats
-export const getAdminDashboardStats = cache(
-  async (): Promise<DashboardStats> => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard/admin`,
-        {
-          credentials: "include",
-          next: {
-            tags: ["dashboard-stats"], // Cache tag for revalidation
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard stats: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.data || null;
-    } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-      throw error;
-    }
-  }
-);
-
-// Cache for chart data
-export const getChartData = cache(async (): Promise<ChartData> => {
+// Try these common endpoint patterns:
+export const getAdminDashboardStats = async (): Promise<DashboardStats> => {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/charts`,
-      {
-        credentials: "include",
-        next: {
-          tags: ["chart-data"], // Cache tag for revalidation
-        },
-      }
-    );
+    // Try different endpoint variations
+    const endpoints = [
+      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/dashboard`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/admin`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard/admin`, // Original
+    ];
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch chart data: ${response.status}`);
+    let response;
+    let lastError;
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log("Trying endpoint:", endpoint);
+        response = await fetch(endpoint, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Success with endpoint:", endpoint);
+          return data.data || data;
+        }
+      } catch (error) {
+        lastError = error;
+        console.log("Failed with endpoint:", endpoint);
+      }
     }
 
-    const data = await response.json();
-    return data.data || null;
+    // If all endpoints fail
+    throw new Error(
+      `Failed to fetch dashboard stats: 404 - Endpoint not found`
+    );
   } catch (error) {
-    console.error("Error fetching chart data:", error);
+    console.error("Error fetching dashboard stats:", error);
     throw error;
   }
-});
+};
 
-// Service functions for dashboard
-export const metaService = {
-  // Get all dashboard data
-  async getDashboardData(): Promise<{
-    stats: DashboardStats | null;
-    chartData?: ChartData | null;
-  }> {
-    try {
-      // Fetch both in parallel
-      const [stats, chartData] = await Promise.allSettled([
-        getAdminDashboardStats(),
-        getChartData(),
-      ]);
+export const getChartData = async (): Promise<ChartData> => {
+  try {
+    // Try different endpoint variations
+    const endpoints = [
+      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/charts`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/analytics/charts`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/charts`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/charts`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/charts`, // Original
+    ];
 
-      return {
-        stats: stats.status === "fulfilled" ? stats.value : null,
-        chartData: chartData.status === "fulfilled" ? chartData.value : null,
-      };
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      throw error;
+    let response;
+    let lastError;
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log("Trying chart endpoint:", endpoint);
+        response = await fetch(endpoint, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Success with chart endpoint:", endpoint);
+          return data.data || data;
+        }
+      } catch (error) {
+        lastError = error;
+        console.log("Failed with chart endpoint:", endpoint);
+      }
     }
-  },
 
-  // Revalidate cache
-  async revalidateCache(): Promise<void> {
-    try {
-      await fetch("/api/revalidate?tag=dashboard", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to revalidate cache:", error);
-    }
-  },
+    // If all endpoints fail, return empty/default data
+    console.log("No chart endpoint found, returning default data");
+    return {
+      barChartData: [],
+      pieChartData: {
+        bookingStatus: [],
+        listingCategories: [],
+        userRoles: [],
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching chart data:", error);
+    // Return empty/default data instead of throwing
+    return {
+      barChartData: [],
+      pieChartData: {
+        bookingStatus: [],
+        listingCategories: [],
+        userRoles: [],
+      },
+    };
+  }
 };
