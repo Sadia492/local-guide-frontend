@@ -28,6 +28,27 @@ export interface ChartData {
     userRoles: Array<{ _id: string; count: number }>;
   };
 }
+export interface TouristDashboardData {
+  upcomingBookings: Array<{
+    _id: string;
+    listing: {
+      _id: string;
+      title: string;
+      city: string;
+      images: string[];
+      guide: { name: string };
+    };
+    date: string;
+    status: string;
+    totalPrice: number;
+    groupSize: number;
+  }>;
+  pastExperiences: Array<{
+    _id: string;
+    listing: { title: string; city: string };
+    date: string;
+  }>;
+}
 
 // Try these common endpoint patterns:
 export const getAdminDashboardStats = async (): Promise<DashboardStats> => {
@@ -127,3 +148,81 @@ export const getChartData = async (): Promise<ChartData> => {
     };
   }
 };
+export const fetchDashboard = async () => {
+  try {
+    // Try different endpoint variations for guide dashboard
+    const endpoints = [
+      `${process.env.NEXT_PUBLIC_API_URL}/api/guide/dashboard`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/guide`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/dashboard/guide`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard`,
+    ];
+
+    let response;
+    for (const endpoint of endpoints) {
+      try {
+        response = await fetch(endpoint, {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            return data.data; // Return the transformed data for guide
+          }
+        }
+      } catch (error) {
+        console.log("Failed with endpoint:", endpoint);
+      }
+    }
+    throw new Error(
+      "Failed to fetch guide dashboard: 404 - Endpoint not found"
+    );
+  } catch (error) {
+    console.error("Error fetching guide dashboard:", error);
+    throw error;
+  }
+};
+
+export const fetchTouristDashboard =
+  async (): Promise<TouristDashboardData> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to load: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        const userData = result.data;
+        return {
+          upcomingBookings:
+            userData.recentBookings?.filter(
+              (b: any) => b.status === "PENDING" || b.status === "CONFIRMED"
+            ) || [],
+          pastExperiences:
+            userData.recentBookings
+              ?.filter((b: any) => b.status === "COMPLETED")
+              .map((booking: any) => ({
+                _id: booking._id,
+                listing: booking.listing,
+                date: booking.date,
+              })) || [],
+        };
+      }
+
+      return {
+        upcomingBookings: [],
+        pastExperiences: [],
+      };
+    } catch (error) {
+      console.error("Error fetching tourist dashboard:", error);
+      throw error;
+    }
+  };
