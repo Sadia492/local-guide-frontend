@@ -37,11 +37,11 @@ export default function Sidebar() {
 
   // Tourist navigation
   const touristNav = [
-    // {
-    //   href: "/dashboard/tourist",
-    //   icon: <Calendar className="w-5 h-5" />,
-    //   label: "My Bookings",
-    // },
+    {
+      href: "/dashboard/tourist",
+      icon: <Calendar className="w-5 h-5" />,
+      label: "Dashboard",
+    },
     {
       href: "/dashboard/tourist/wishlist",
       icon: <Home className="w-5 h-5" />,
@@ -56,11 +56,11 @@ export default function Sidebar() {
 
   // Guide navigation
   const guideNav = [
-    // {
-    //   href: "/dashboard/guide",
-    //   icon: <Briefcase className="w-5 h-5" />,
-    //   label: "Dashboard",
-    // },
+    {
+      href: "/dashboard/guide",
+      icon: <Briefcase className="w-5 h-5" />,
+      label: "Dashboard",
+    },
     {
       href: "/dashboard/guide/my-listings",
       icon: <Home className="w-5 h-5" />,
@@ -80,11 +80,11 @@ export default function Sidebar() {
 
   // Admin navigation
   const adminNav = [
-    // {
-    //   href: "/dashboard/admin",
-    //   icon: <Shield className="w-5 h-5" />,
-    //   label: "Admin Dashboard",
-    // },
+    {
+      href: "/dashboard/admin",
+      icon: <Shield className="w-5 h-5" />,
+      label: "Admin Dashboard",
+    },
     {
       href: "/dashboard/admin/users",
       icon: <User className="w-5 h-5" />,
