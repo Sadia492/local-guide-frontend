@@ -48,14 +48,6 @@ export function BecomeGuide() {
                 </div>
               ))}
             </div>
-
-            <Button
-              variant="outline"
-              size="lg"
-              className="bg-white text-green-700 hover:bg-green-50 border-0"
-            >
-              Start Earning Today
-            </Button>
           </div>
 
           <div className="relative">

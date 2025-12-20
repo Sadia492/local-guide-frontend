@@ -1,150 +1,166 @@
 import React from "react";
-import { MapPin, Facebook, Twitter, Instagram, Mail } from "lucide-react";
+import {
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  Heart,
+} from "lucide-react";
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Main Footer Content */}
         <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div>
+          {/* Brand & Description */}
+          <div className="md:col-span-2 lg:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
               <MapPin className="w-8 h-8 text-blue-500" />
               <span className="text-2xl font-bold text-white">LocalGuide</span>
             </div>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-6">
               Connecting travelers with local experts for authentic experiences
               worldwide.
             </p>
             <div className="flex space-x-4">
-              <a
-                href="#"
-                className="hover:text-blue-500 transition-colors"
+              <Link
+                href="https://www.facebook.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-500 transition-colors hover:scale-110 transform"
                 aria-label="Facebook"
               >
                 <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="hover:text-blue-500 transition-colors"
+              </Link>
+              <Link
+                href="https://x.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-500 transition-colors hover:scale-110 transform"
                 aria-label="Twitter"
               >
                 <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="hover:text-blue-500 transition-colors"
+              </Link>
+              <Link
+                href="https://www.instagram.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-500 transition-colors hover:scale-110 transform"
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="hover:text-blue-500 transition-colors"
+              </Link>
+              <Link
+                href="mailto:hello@localguide.com"
+                className="hover:text-blue-500 transition-colors hover:scale-110 transform"
                 aria-label="Email"
               >
                 <Mail className="w-5 h-5" />
-              </a>
+              </Link>
             </div>
           </div>
 
-          {/* For Travelers */}
+          {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">For Travelers</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-3">
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  How It Works
-                </a>
+                <Link
+                  href="/"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
+                  Home
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Find a Guide
-                </a>
+                <Link
+                  href="/explore"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
+                  Explore Tours
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Popular Destinations
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Trust & Safety
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* For Guides */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">For Guides</h3>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
+                <Link
+                  href="/become-guide"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
                   Become a Guide
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Guide Resources
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Success Stories
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Community
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Company */}
+          {/* Resources */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Company</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-semibold mb-4">Resources</h3>
+            <ul className="space-y-3">
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
+                <Link
+                  href="/about"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Careers
-                </a>
+                <Link
+                  href="/help"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
+                  Help Center
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Press
-                </a>
+                <Link
+                  href="/privacy"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
+                  Privacy Policy
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-blue-500 transition-colors">
-                  Contact
-                </a>
+                <Link
+                  href="/terms"
+                  className="hover:text-blue-500 transition-colors inline-block hover:translate-x-1 transform"
+                >
+                  Terms of Service
+                </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Contact</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link
+                  href="mailto:support@localguide.com"
+                  className="hover:text-blue-500 transition-colors"
+                >
+                  support@localguide.com
+                </Link>
+              </li>
+              <li className="text-gray-400">+1 (555) 123-4567</li>
+              <li className="text-gray-400">123 Travel Street</li>
+              <li className="text-gray-400">City, Country 12345</li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm mb-4 md:mb-0">
-            © 2024 LocalGuide. All rights reserved.
+        {/* Copyright Message */}
+        <div className="mt-4 text-center text-gray-500 text-xs">
+          <p>
+            LocalGuide is a platform connecting travelers with verified local
+            guides worldwide.
           </p>
-          <div className="flex space-x-6 text-sm">
-            <a href="#" className="hover:text-blue-500 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-blue-500 transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="hover:text-blue-500 transition-colors">
-              Cookie Policy
-            </a>
-          </div>
+          <p className="mt-1">
+            All experiences are curated and verified by our team.
+          </p>
         </div>
       </div>
     </footer>
