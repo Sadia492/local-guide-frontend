@@ -1,5 +1,5 @@
 // services/meta/meta.service.ts
-"use client"; // Add this for client-side usage
+import { cache } from "react";
 
 export interface DashboardStats {
   totalListings: number;
@@ -29,35 +29,43 @@ export interface ChartData {
   };
 }
 
-// CLIENT-SIDE function (like your booking service)
-export const getAdminDashboardStats = async (): Promise<DashboardStats> => {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard/admin`,
-      {
-        credentials: "include", // This sends cookies
+// Cache for admin dashboard stats
+export const getAdminDashboardStats = cache(
+  async (): Promise<DashboardStats> => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/meta/dashboard/admin`,
+        {
+          credentials: "include",
+          next: {
+            tags: ["dashboard-stats"], // Cache tag for revalidation
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch dashboard stats: ${response.status}`);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch dashboard stats: ${response.status}`);
+      const data = await response.json();
+      return data.data || null;
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      throw error;
     }
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
-    throw error;
   }
-};
+);
 
-// CLIENT-SIDE function for chart data
-export const getChartData = async (): Promise<ChartData> => {
+// Cache for chart data
+export const getChartData = cache(async (): Promise<ChartData> => {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/meta/charts`,
       {
-        credentials: "include", // This sends cookies
+        credentials: "include",
+        next: {
+          tags: ["chart-data"], // Cache tag for revalidation
+        },
       }
     );
 
@@ -66,9 +74,45 @@ export const getChartData = async (): Promise<ChartData> => {
     }
 
     const data = await response.json();
-    return data.data;
+    return data.data || null;
   } catch (error) {
     console.error("Error fetching chart data:", error);
     throw error;
   }
+});
+
+// Service functions for dashboard
+export const metaService = {
+  // Get all dashboard data
+  async getDashboardData(): Promise<{
+    stats: DashboardStats | null;
+    chartData?: ChartData | null;
+  }> {
+    try {
+      // Fetch both in parallel
+      const [stats, chartData] = await Promise.allSettled([
+        getAdminDashboardStats(),
+        getChartData(),
+      ]);
+
+      return {
+        stats: stats.status === "fulfilled" ? stats.value : null,
+        chartData: chartData.status === "fulfilled" ? chartData.value : null,
+      };
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      throw error;
+    }
+  },
+
+  // Revalidate cache
+  async revalidateCache(): Promise<void> {
+    try {
+      await fetch("/api/revalidate?tag=dashboard", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Failed to revalidate cache:", error);
+    }
+  },
 };
