@@ -36,10 +36,10 @@ interface AdminDashboardClientProps {
 
 export default function AdminDashboardClient({
   stats,
-  bookingChartData,
-  categoryChartData,
-  userRoleData,
-  hasChartData,
+  bookingChartData = [],
+  categoryChartData = [],
+  userRoleData = [],
+  hasChartData = false,
 }: AdminDashboardClientProps) {
   // Prepare data for stat cards
   const statCards = [
