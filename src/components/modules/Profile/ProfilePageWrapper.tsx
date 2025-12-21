@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ProfileHeader from "@/components/modules/Profile/ProfileHeader";
 import ProfileTabs from "@/components/modules/Profile/ProfileTabs";
 import ProfileAbout from "@/components/modules/Profile/ProfileAbout";
@@ -13,6 +13,7 @@ import {
   Review,
   Stats,
 } from "@/services/user/user.service";
+import { useAuth } from "@/actions/useAuth";
 
 interface ProfileData {
   user: UserProfile;
@@ -26,15 +27,18 @@ export default function ProfilePageWrapper() {
   const searchParams = useSearchParams();
   const userId = params.id as string;
   const activeTab = searchParams.get("tab") || "about";
-
+  const { user: mainUser } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const router = useRouter();
   useEffect(() => {
     fetchProfileData();
     fetchCurrentUser();
+    if (!mainUser) {
+      router.push("/login");
+    }
   }, [userId]);
 
   const fetchProfileData = async () => {
