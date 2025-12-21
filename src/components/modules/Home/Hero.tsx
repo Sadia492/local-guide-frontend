@@ -282,23 +282,16 @@ export function Hero() {
                   variant="primary"
                   size="lg"
                   className="relative overflow-hidden group w-full"
-                  onClick={handlePrimaryButtonClick}
                 >
                   <motion.span
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: "-100%" }}
-                    whileHover={{ x: "100%" }}
+                    className="absolute inset-0 bg-white/30 rounded-full"
+                    initial={{ scale: 0, opacity: 0 }}
+                    whileTap={{ scale: 4, opacity: 0 }}
                     transition={{ duration: 0.6 }}
                   />
                   <span className="relative flex items-center justify-center">
                     Find Your Guide
-                    <motion.div
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                      className="ml-2"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </motion.div>
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </span>
                 </Button>
               </Link>
@@ -346,33 +339,6 @@ export function Hero() {
           />
         </svg>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-          <motion.div
-            className="w-1 h-3 bg-white rounded-full mt-2"
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-        </div>
-      </motion.div>
-
-      <style jsx>{`
-        @keyframes ripple {
-          to {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-        .animate-ripple {
-          animation: ripple 0.6s linear;
-        }
-      `}</style>
     </section>
   );
 }
