@@ -28,6 +28,13 @@ export interface ChartData {
     userRoles: Array<{ _id: string; count: number }>;
   };
 }
+// Add to your existing interfaces
+export interface HeroStats {
+  happyTravelers: string; // "50K+"
+  localGuides: string; // "2K+"
+  cities: string; // "500+"
+  fiveStarReviews: number; // 98
+}
 export interface TouristDashboardData {
   upcomingBookings: Array<{
     _id: string;
@@ -91,6 +98,97 @@ export const getAdminDashboardStats = async (): Promise<DashboardStats> => {
     console.error("Error fetching dashboard stats:", error);
     throw error;
   }
+};
+// Hero stats fetching function
+export const getHeroStats = async (): Promise<HeroStats> => {
+  try {
+    // Try different endpoint variations - match your backend route
+    const endpoints = [
+      `${process.env.NEXT_PUBLIC_API_URL}/api/meta/hero-stats`, // New route
+      `${process.env.NEXT_PUBLIC_API_URL}/api/hero-stats`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/stats/hero`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/public/stats`,
+    ];
+
+    let response;
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log("Trying hero stats endpoint:", endpoint);
+        response = await fetch(endpoint, {
+          credentials: "include", // Include cookies if needed
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // Add cache if it's public data (optional)
+          next: { revalidate: 3600 }, // Revalidate every hour for static generation
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Hero stats success with endpoint:", endpoint);
+
+          // Handle different response structures
+          if (data.data) {
+            return data.data;
+          } else if (data.happyTravelers || data.localGuides) {
+            return data; // Direct data object
+          } else {
+            return data; // Fallback
+          }
+        }
+      } catch (error) {
+        console.log("Failed with hero stats endpoint:", endpoint);
+        // Continue to next endpoint
+      }
+    }
+
+    // If all endpoints fail, return mock/fallback data
+    console.log("No hero stats endpoint found, returning fallback data");
+    return {
+      happyTravelers: "50K+",
+      localGuides: "2K+",
+      cities: "500+",
+      fiveStarReviews: 98,
+    };
+  } catch (error) {
+    console.error("Error fetching hero stats:", error);
+    // Return fallback data
+    return {
+      happyTravelers: "50K+",
+      localGuides: "2K+",
+      cities: "500+",
+      fiveStarReviews: 98,
+    };
+  }
+};
+
+// Optional: If you want a cached version
+const heroStatsCache = {
+  data: null as HeroStats | null,
+  timestamp: 0,
+  ttl: 3600000, // 1 hour in milliseconds
+};
+
+export const getCachedHeroStats = async (): Promise<HeroStats> => {
+  const now = Date.now();
+
+  // Return cached data if it's still valid
+  if (
+    heroStatsCache.data &&
+    now - heroStatsCache.timestamp < heroStatsCache.ttl
+  ) {
+    return heroStatsCache.data;
+  }
+
+  // Fetch fresh data
+  const data = await getHeroStats();
+
+  // Update cache
+  heroStatsCache.data = data;
+  heroStatsCache.timestamp = now;
+
+  return data;
 };
 
 export const getChartData = async (): Promise<ChartData> => {

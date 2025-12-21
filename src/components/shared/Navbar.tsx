@@ -61,7 +61,19 @@ export function Navbar() {
                 {user.role === "GUIDE" && (
                   <>
                     <Link
-                      href="/dashboard/guide/my-listings"
+                      href="/about"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      About
+                    </Link>
+                    <Link
+                      href="/faq"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      FAQ
+                    </Link>
+                    <Link
+                      href="/dashboard/guide"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       Dashboard
@@ -78,22 +90,23 @@ export function Navbar() {
                 {user.role === "ADMIN" && (
                   <>
                     <Link
-                      href="/dashboard/admin/bookings"
+                      href="/about"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      About
+                    </Link>
+                    <Link
+                      href="/faq"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      FAQ
+                    </Link>
+
+                    <Link
+                      href="/dashboard/admin"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
                       Admin Dashboard
-                    </Link>
-                    <Link
-                      href="/dashboard/admin/users"
-                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-                    >
-                      Manage Users
-                    </Link>
-                    <Link
-                      href="/dashboard/admin/listings"
-                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-                    >
-                      Manage Listings
                     </Link>
                   </>
                 )}
@@ -101,10 +114,23 @@ export function Navbar() {
                 {user.role === "TOURIST" && (
                   <>
                     <Link
-                      href="/dashboard/tourist/my-trips"
+                      href="/about"
                       className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                     >
-                      My Bookings
+                      About
+                    </Link>
+                    <Link
+                      href="/faq"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      FAQ
+                    </Link>
+
+                    <Link
+                      href="/dashboard/tourist"
+                      className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                    >
+                      Dashboard
                     </Link>
                   </>
                 )}
@@ -140,6 +166,25 @@ export function Navbar() {
             ) : (
               // User is not logged in
               <>
+                <Link
+                  href="/about"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  About
+                </Link>
+                <Link
+                  href="/faq"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  FAQ
+                </Link>
+                <Link
+                  href="/contact"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  Contact
+                </Link>
+
                 <Link
                   href="/become-guide"
                   className="text-gray-700 hover:text-blue-600 font-medium transition-colors"

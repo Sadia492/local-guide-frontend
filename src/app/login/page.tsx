@@ -29,11 +29,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     } else {
       const userRole = currentUser.role;
       if (userRole === "GUIDE") {
-        redirect("/dashboard/guide/my-listings");
+        redirect("/dashboard/guide");
       } else if (userRole === "ADMIN") {
-        redirect("/dashboard/admin/users");
+        redirect("/dashboard/admin");
       } else {
-        redirect("/dashboard/tourist/wishlist");
+        redirect("/dashboard/tourist");
       }
     }
   }

@@ -14,10 +14,19 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { getHeroStats } from "@/services/meta/meta.service"; // Import your service
+import { StatsDisplay } from "../stats-display";
 
 export function Hero() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const [pulse, setPulse] = useState(false);
+  const [stats, setStats] = useState({
+    happyTravelers: "50K+",
+    localGuides: "2K+",
+    cities: "500+",
+    fiveStarReviews: 98,
+  });
+  const [loading, setLoading] = useState(true);
   const featuresRef = useRef<HTMLDivElement>(null);
 
   const features = [
@@ -43,7 +52,25 @@ export function Hero() {
     },
   ];
 
-  // Auto-rotate features - Only start after component mounts
+  // Fetch hero stats on component mount
+  useEffect(() => {
+    const fetchHeroStats = async () => {
+      try {
+        setLoading(true);
+        const data = await getHeroStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch hero stats:", error);
+        // Keep default values if fetch fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeroStats();
+  }, []);
+
+  // Auto-rotate features
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % features.length);
@@ -61,7 +88,6 @@ export function Hero() {
   }, []);
 
   const handleBecomeGuide = () => {
-    // Animation feedback
     const button = document.querySelector("#become-guide-btn");
     if (button) {
       button.classList.add("scale-95");
@@ -72,7 +98,6 @@ export function Hero() {
   };
 
   const handlePrimaryButtonClick = () => {
-    // Add ripple effect
     const button = document.querySelector("#primary-cta-btn");
     if (button) {
       const ripple = document.createElement("div");
@@ -82,6 +107,18 @@ export function Hero() {
       setTimeout(() => ripple.remove(), 600);
     }
   };
+
+  // Update the cities feature to use dynamic data
+  const dynamicFeatures = features.map((feature, index) => {
+    if (index === 1) {
+      // Cities feature
+      return {
+        ...feature,
+        text: `${stats.cities} Cities Worldwide`,
+      };
+    }
+    return feature;
+  });
 
   return (
     <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white overflow-hidden">
@@ -176,7 +213,7 @@ export function Hero() {
             experiences that go beyond the tourist trail
           </motion.p>
 
-          {/* Animated Features */}
+          {/* Animated Features - Now using dynamic cities data */}
           <motion.div
             ref={featuresRef}
             className="flex flex-wrap justify-center gap-4 mb-12"
@@ -184,7 +221,7 @@ export function Hero() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {features.map((feature, index) => (
+            {dynamicFeatures.map((feature, index) => (
               <motion.div
                 key={index}
                 className={cn(
@@ -206,49 +243,14 @@ export function Hero() {
             ))}
           </motion.div>
 
-          {/* Stats Section */}
+          {/* Dynamic Stats Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
+            className="mb-12"
           >
-            {[
-              {
-                label: "Happy Travelers",
-                value: "50K+",
-                icon: <Users className="w-4 h-4" />,
-              },
-              {
-                label: "Local Guides",
-                value: "2K+",
-                icon: <Star className="w-4 h-4" />,
-              },
-              {
-                label: "Cities",
-                value: "500+",
-                icon: <Globe className="w-4 h-4" />,
-              },
-              {
-                label: "5 Star Reviews",
-                value: "98%",
-                icon: <Sparkles className="w-4 h-4" />,
-              },
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10"
-                whileHover={{ y: -5, backgroundColor: "rgba(255,255,255,0.1)" }}
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  {stat.icon}
-                  <div className="text-2xl md:text-3xl font-bold">
-                    {stat.value}
-                  </div>
-                </div>
-                <div className="text-sm text-blue-200">{stat.label}</div>
-              </motion.div>
-            ))}
+            <StatsDisplay stats={stats} loading={loading} />
           </motion.div>
 
           {/* CTAs with Enhanced Feedback */}

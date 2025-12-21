@@ -33,7 +33,7 @@ export default function TourCard({
   currentUser,
 }: TourCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
+    <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full flex flex-col p-0">
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
         {tour.images && tour.images.length > 0 ? (
@@ -59,7 +59,7 @@ export default function TourCard({
         </div>
       </div>
 
-      <CardContent className="flex-1 p-6 flex flex-col">
+      <CardContent className="flex-1 p-6 flex flex-col pt-0">
         {/* Title and Location */}
         <div className="mb-4">
           <h3 className="text-xl font-bold text-gray-900 line-clamp-1 mb-2">
