@@ -27,19 +27,32 @@ export default function ProfilePageWrapper() {
   const searchParams = useSearchParams();
   const userId = params.id as string;
   const activeTab = searchParams.get("tab") || "about";
-  const { user: mainUser } = useAuth();
+  const { user: mainUser, isLoading: authLoading } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // 1. Check authentication FIRST
   useEffect(() => {
+    if (authLoading) return; // Wait for auth check to complete
+
+    if (!mainUser) {
+      // Store intended URL for redirect after login
+      sessionStorage.setItem("redirectUrl", window.location.pathname);
+      router.push("/login");
+      return;
+    }
+  }, [mainUser, authLoading, router]);
+
+  // 2. Only fetch data if user is authenticated
+  useEffect(() => {
+    if (!mainUser || authLoading) return;
+
     fetchProfileData();
     fetchCurrentUser();
-    if (!mainUser) {
-      router.push("/login");
-    }
-  }, [userId]);
+  }, [userId, mainUser, authLoading]);
 
   const fetchProfileData = async () => {
     try {
@@ -63,7 +76,13 @@ export default function ProfilePageWrapper() {
           throw new Error("User not found");
         }
         if (response.status === 401) {
-          throw new Error("Authentication required to view profile");
+          // Clear auth and redirect to login
+          sessionStorage.setItem("redirectUrl", window.location.pathname);
+          router.push("/login");
+          return;
+        }
+        if (response.status === 403) {
+          throw new Error("You don't have permission to view this profile");
         }
         throw new Error(`Failed to fetch profile: ${response.status}`);
       }
@@ -77,8 +96,21 @@ export default function ProfilePageWrapper() {
       setProfileData(data.data);
     } catch (err) {
       console.error("Error fetching profile:", err);
-      setError(err instanceof Error ? err.message : "Failed to load profile");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load profile";
+      setError(errorMessage);
       setProfileData(null);
+
+      // If it's an auth error, redirect to login
+      if (
+        errorMessage.includes("Authentication") ||
+        errorMessage.includes("auth") ||
+        errorMessage.includes("401") ||
+        errorMessage.includes("403")
+      ) {
+        sessionStorage.setItem("redirectUrl", window.location.pathname);
+        router.push("/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -99,19 +131,85 @@ export default function ProfilePageWrapper() {
 
       if (response.ok) {
         const data = await response.json();
-
         setCurrentUser(data.data || null);
+      } else if (response.status === 401) {
+        // Session expired, redirect to login
+        sessionStorage.setItem("redirectUrl", window.location.pathname);
+        router.push("/login");
       }
     } catch (err) {
       console.error("Error fetching current user:", err);
-      // Don't set error here, just continue without current user
+      // Don't redirect on network errors for current user fetch
     }
   };
 
   const refreshData = () => {
-    fetchProfileData();
+    if (mainUser) {
+      fetchProfileData();
+    }
   };
 
+  // 1. Show auth loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Show not authenticated state
+  if (!mainUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-blue-100 rounded-full">
+            <svg
+              className="w-8 h-8 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Login Required
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Please login to view this profile
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                sessionStorage.setItem("redirectUrl", window.location.pathname);
+                router.push("/login");
+              }}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Login to Continue
+            </button>
+            <button
+              onClick={() => router.push("/explore")}
+              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Browse Tours First
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Show profile loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -150,7 +248,8 @@ export default function ProfilePageWrapper() {
     const isAuthError =
       error?.includes("Authentication") ||
       error?.includes("auth") ||
-      error?.includes("401");
+      error?.includes("401") ||
+      error?.includes("403");
 
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -159,25 +258,31 @@ export default function ProfilePageWrapper() {
             {isAuthError ? "🔒" : "⚠️"}
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">
-            {isAuthError ? "Profile Access Restricted" : "Profile Not Found"}
+            {isAuthError ? "Access Restricted" : "Profile Not Found"}
           </h2>
           <p className="text-gray-600 mb-6">
             {error || "The profile you're looking for doesn't exist."}
           </p>
           <div className="space-x-4">
-            <a
-              href="/explore"
+            <button
+              onClick={() => router.push("/explore")}
               className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Explore Tours
-            </a>
+            </button>
             {isAuthError && (
-              <a
-                href="/login"
+              <button
+                onClick={() => {
+                  sessionStorage.setItem(
+                    "redirectUrl",
+                    window.location.pathname
+                  );
+                  router.push("/login");
+                }}
                 className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 Login to View
-              </a>
+              </button>
             )}
           </div>
         </div>
@@ -189,7 +294,6 @@ export default function ProfilePageWrapper() {
   const isGuide = user.role === "GUIDE";
   const isTourist = user.role === "TOURIST";
   const isOwnProfile = currentUser?._id === userId;
-  console.log(currentUser?._id);
 
   const profileStats = {
     toursGiven: stats?.completedBookings || 0,
